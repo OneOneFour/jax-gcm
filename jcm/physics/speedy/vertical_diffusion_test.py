@@ -15,8 +15,9 @@ class Test_VerticalDiffusion_Unit(unittest.TestCase):
             parameters, geometry, ForcingData
         from jcm.physics.speedy.physics_data import HumidityData, ConvectionData, PhysicsData
         from jcm.physics.speedy.params import Parameters
-        from jcm.geometry import Geometry
-        geometry = Geometry.single_column_geometry(num_levels=kx)
+        from jcm.terrain_data import TerrainData
+from jcm.utils import get_coords
+        geometry = TerrainData.single_column(num_levels=kx)
         parameters = Parameters.default()
         from jcm.forcing import ForcingData
         from jcm.physics_interface import PhysicsState, PhysicsTendency
@@ -83,14 +84,14 @@ class Test_VerticalDiffusion_Unit(unittest.TestCase):
         state_floats = convert_to_float(state)
         parameters_floats = convert_to_float(parameters)
         forcing_floats = convert_to_float(forcing)
-        geometry_floats = convert_to_float(geometry)
+        terrain_floats = convert_to_float(geometry)
 
-        def f(physics_data_f, state_f, parameters_f, forcing_f,geometry_f):
+        def f(physics_data_f, state_f, parameters_f, forcing_f,terrain_f):
             tend_out, data_out = get_vertical_diffusion_tend(physics_data=convert_back(physics_data_f, physics_data), 
                                        state=convert_back(state_f, state), 
                                        parameters=convert_back(parameters_f, parameters), 
                                        forcing=convert_back(forcing_f, forcing), 
-                                       geometry=convert_back(geometry_f, geometry)
+                                       geometry=convert_back(terrain_f, geometry)
                                        )
             return convert_to_float(tend_out)
         
@@ -98,9 +99,9 @@ class Test_VerticalDiffusion_Unit(unittest.TestCase):
         f_jvp = functools.partial(jax.jvp, f)
         f_vjp = functools.partial(jax.vjp, f)  
 
-        check_vjp(f, f_vjp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, geometry_floats), 
+        check_vjp(f, f_vjp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.00001)
-        check_jvp(f, f_jvp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, geometry_floats), 
+        check_jvp(f, f_jvp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.000001)
 
         

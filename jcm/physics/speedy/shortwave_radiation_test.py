@@ -16,7 +16,8 @@ class TestSolar(unittest.TestCase):
 
         global solar, geometry
         from jcm.physics.speedy.shortwave_radiation import solar
-        from jcm.geometry import Geometry
+        from jcm.terrain_data import TerrainData
+from jcm.utils import get_coords
         from jcm.physics.speedy.test_utils import convert_to_speedy_latitudes
         geometry = convert_to_speedy_latitudes(Geometry.from_grid_shape(nodal_shape=(ix, il), num_levels=kx))
 
@@ -136,7 +137,8 @@ class TestShortWaveRadiation(unittest.TestCase):
         from jcm.physics.speedy.shortwave_radiation import get_clouds, get_zonal_average_fields, get_shortwave_rad_fluxes, solar
         from jcm.physics.speedy.physical_constants import epssw, solc
         from jcm.physics.speedy.params import Parameters
-        from jcm.geometry import Geometry
+        from jcm.terrain_data import TerrainData
+from jcm.utils import get_coords
         from jcm.physics.speedy.test_utils import convert_to_speedy_latitudes
         parameters = Parameters.default()
         forcing = ForcingData.zeros((ix, il))
@@ -144,7 +146,8 @@ class TestShortWaveRadiation(unittest.TestCase):
 
     # FIXME: currently testing against itself, needs updated values from speedy.f90
     def test_shortwave_radiation(self):
-        from jcm.geometry import Geometry
+        from jcm.terrain_data import TerrainData
+from jcm.utils import get_coords
         from jcm.physics.speedy.test_utils import convert_to_speedy_latitudes
         qa = 0.5 * 1000. * jnp.array([0., 0.00035438, 0.00347954, 0.00472337, 0.00700214,0.01416442,0.01782708, 0.0216505])
         qsat = 1000. * jnp.array([0., 0.00037303, 0.00366268, 0.00787228, 0.01167024, 0.01490992, 0.01876534, 0.02279])
@@ -300,7 +303,7 @@ class TestShortWaveRadiation(unittest.TestCase):
         physics_data = get_zonal_average_fields(state, physics_data, forcing, geometry)
 
         # Expected form for ozone based on the provided formula
-        flat2 = 1.5 * geometry.sia**2 - 0.5
+        flat2 = 1.5 * physics_data.speedy_coords.sia**2 - 0.5
         expected_ozone = 0.4 * epssw * (1.0 + jnp.maximum(0.0, jnp.cos(4.0 * jnp.arcsin(1.0) * (date_data.tyear + 10.0 / 365.0)))  + 1.8 * flat2)
         np.testing.assert_allclose(physics_data.shortwave_rad.ozone[:, 0], physics_data.shortwave_rad.fsol[:, 0] * expected_ozone[0], atol=1e-4)
 
@@ -380,7 +383,8 @@ class TestShortWaveRadiation(unittest.TestCase):
         self.assertFalse(df_dparams.isnan().any_true())
 
     def test_clouds_gradients_isnan_with_realistic_values_grad(self):
-        from jcm.geometry import Geometry
+        from jcm.terrain_data import TerrainData
+from jcm.utils import get_coords
         from jcm.physics.speedy.test_utils import convert_to_speedy_latitudes
 
         qa = 0.5 * 1000. * jnp.array([0., 0.00035438, 0.00347954, 0.00472337, 0.00700214,0.01416442,0.01782708, 0.0216505])
@@ -459,13 +463,13 @@ class TestShortWaveRadiation(unittest.TestCase):
         physics_data_floats = convert_to_float(physics_data)
         state_floats = convert_to_float(state)
         forcing_floats = convert_to_float(forcing)
-        geometry_floats = convert_to_float(geometry)
+        terrain_floats = convert_to_float(geometry)
 
-        def f(physics_data_f, state_f, forcing_f,geometry_f):
+        def f(physics_data_f, state_f, forcing_f,terrain_f):
             data_out = get_zonal_average_fields(physics_data=convert_back(physics_data_f, physics_data), 
                                        state=convert_back(state_f, state), 
                                        forcing=convert_back(forcing_f, forcing), 
-                                       geometry=convert_back(geometry_f, geometry)
+                                       geometry=convert_back(terrain_f, geometry)
                                        )
             return convert_to_float(data_out)
         
@@ -473,9 +477,9 @@ class TestShortWaveRadiation(unittest.TestCase):
         f_jvp = functools.partial(jax.jvp, f)
         f_vjp = functools.partial(jax.vjp, f)  
 
-        check_vjp(f, f_vjp, args = (physics_data_floats, state_floats, forcing_floats, geometry_floats), 
+        check_vjp(f, f_vjp, args = (physics_data_floats, state_floats, forcing_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.00001)
-        check_jvp(f, f_jvp, args = (physics_data_floats, state_floats, forcing_floats, geometry_floats), 
+        check_jvp(f, f_jvp, args = (physics_data_floats, state_floats, forcing_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.0001)
 
     def test_get_shortwave_rad_fluxes_gradient_check(self):
@@ -493,14 +497,14 @@ class TestShortWaveRadiation(unittest.TestCase):
         state_floats = convert_to_float(state)
         parameters_floats = convert_to_float(parameters)
         forcing_floats = convert_to_float(forcing)
-        geometry_floats = convert_to_float(geometry)
+        terrain_floats = convert_to_float(geometry)
 
-        def f(physics_data_f, state_f, parameters_f, forcing_f,geometry_f):
+        def f(physics_data_f, state_f, parameters_f, forcing_f,terrain_f):
             tend_out, data_out = get_shortwave_rad_fluxes(physics_data=convert_back(physics_data_f, physics_data), 
                                        state=convert_back(state_f, state), 
                                        parameters=convert_back(parameters_f, parameters), 
                                        forcing=convert_back(forcing_f, forcing), 
-                                       geometry=convert_back(geometry_f, geometry)
+                                       geometry=convert_back(terrain_f, geometry)
                                        )
             return convert_to_float(data_out)
         
@@ -508,9 +512,9 @@ class TestShortWaveRadiation(unittest.TestCase):
         f_jvp = functools.partial(jax.jvp, f)
         f_vjp = functools.partial(jax.vjp, f)  
 
-        check_vjp(f, f_vjp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, geometry_floats), 
+        check_vjp(f, f_vjp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.00001)
-        check_jvp(f, f_jvp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, geometry_floats), 
+        check_jvp(f, f_jvp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.0001)
 
     @pytest.mark.skip(reason="finite differencing produces nans")
@@ -552,14 +556,14 @@ class TestShortWaveRadiation(unittest.TestCase):
         state_floats = convert_to_float(state)
         parameters_floats = convert_to_float(parameters)
         forcing_floats = convert_to_float(forcing)
-        geometry_floats = convert_to_float(geometry)
+        terrain_floats = convert_to_float(geometry)
 
-        def f(physics_data_f, state_f, parameters_f, forcing_f,geometry_f):
+        def f(physics_data_f, state_f, parameters_f, forcing_f,terrain_f):
             tend_out, data_out = get_clouds(physics_data=convert_back(physics_data_f, physics_data), 
                                        state=convert_back(state_f, state), 
                                        parameters=convert_back(parameters_f, parameters), 
                                        forcing=convert_back(forcing_f, forcing), 
-                                       geometry=convert_back(geometry_f, geometry)
+                                       geometry=convert_back(terrain_f, geometry)
                                        )
             return convert_to_float(data_out)
         
@@ -567,7 +571,7 @@ class TestShortWaveRadiation(unittest.TestCase):
         f_jvp = functools.partial(jax.jvp, f)
         f_vjp = functools.partial(jax.vjp, f)  
 
-        check_vjp(f, f_vjp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, geometry_floats), 
+        check_vjp(f, f_vjp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.00001)
-        check_jvp(f, f_jvp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, geometry_floats), 
+        check_jvp(f, f_jvp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.000001)

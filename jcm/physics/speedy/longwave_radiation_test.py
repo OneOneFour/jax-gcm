@@ -36,7 +36,8 @@ class TestLongwave(unittest.TestCase):
         from jcm.physics_interface import PhysicsState, PhysicsTendency
         from jcm.forcing import ForcingData
         from jcm.physics.speedy.longwave_radiation import get_downward_longwave_rad_fluxes, get_upward_longwave_rad_fluxes, radset
-        from jcm.geometry import Geometry
+        from jcm.terrain_data import TerrainData
+from jcm.utils import get_coords
         from jcm.physics.speedy.test_utils import convert_to_speedy_latitudes
         parameters = Parameters.default()
         geometry = convert_to_speedy_latitudes(Geometry.from_grid_shape(nodal_shape=(ix, il), num_levels=kx))
@@ -216,14 +217,14 @@ class TestLongwave(unittest.TestCase):
         state_floats = convert_to_float(state)
         parameters_floats = convert_to_float(parameters)
         forcing_floats = convert_to_float(forcing)
-        geometry_floats = convert_to_float(geometry)
+        terrain_floats = convert_to_float(geometry)
 
-        def f(physics_data_f, state_f, parameters_f, forcing_f,geometry_f):
+        def f(physics_data_f, state_f, parameters_f, forcing_f,terrain_f):
             tend_out, data_out = get_downward_longwave_rad_fluxes(physics_data=convert_back(physics_data_f, physics_data), 
                                        state=convert_back(state_f, state), 
                                        parameters=convert_back(parameters_f, parameters), 
                                        forcing=convert_back(forcing_f, forcing), 
-                                       geometry=convert_back(geometry_f, geometry)
+                                       geometry=convert_back(terrain_f, geometry)
                                        )
             return convert_to_float(data_out)
         
@@ -231,9 +232,9 @@ class TestLongwave(unittest.TestCase):
         f_jvp = functools.partial(jax.jvp, f)
         f_vjp = functools.partial(jax.vjp, f)  
 
-        check_vjp(f, f_vjp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, geometry_floats), 
+        check_vjp(f, f_vjp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.00001)
-        check_jvp(f, f_jvp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, geometry_floats), 
+        check_jvp(f, f_jvp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.0001)
 
 
@@ -262,14 +263,14 @@ class TestLongwave(unittest.TestCase):
         state_floats = convert_to_float(state)
         parameters_floats = convert_to_float(parameters)
         forcing_floats = convert_to_float(forcing)
-        geometry_floats = convert_to_float(geometry)
+        terrain_floats = convert_to_float(geometry)
 
-        def f(physics_data_f, state_f, parameters_f, forcing_f,geometry_f):
+        def f(physics_data_f, state_f, parameters_f, forcing_f,terrain_f):
             tend_out, data_out = get_upward_longwave_rad_fluxes(physics_data=convert_back(physics_data_f, input_physics_data), 
                                        state=convert_back(state_f, state), 
                                        parameters=convert_back(parameters_f, parameters), 
                                        forcing=convert_back(forcing_f, forcing), 
-                                       geometry=convert_back(geometry_f, geometry)
+                                       geometry=convert_back(terrain_f, geometry)
                                        )
             return convert_to_float(data_out)
         
@@ -277,9 +278,9 @@ class TestLongwave(unittest.TestCase):
         f_jvp = functools.partial(jax.jvp, f)
         f_vjp = functools.partial(jax.vjp, f)  
 
-        check_vjp(f, f_vjp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, geometry_floats), 
+        check_vjp(f, f_vjp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.00001)
-        check_jvp(f, f_jvp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, geometry_floats), 
+        check_jvp(f, f_jvp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.0001)
 
 

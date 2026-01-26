@@ -15,7 +15,7 @@ from dinosaur.time_integration import ExplicitODE
 from dinosaur import primitive_equations, primitive_equations_states
 from dinosaur.coordinate_systems import CoordinateSystem
 from jcm.constants import p0
-from jcm.geometry import Geometry, coords_from_geometry
+from jcm.terrain_data import TerrainData
 from jcm.date import DateData
 from jcm.forcing import ForcingData, default_forcing
 from jcm.physics_interface import PhysicsState, Physics, get_physical_tendencies, dynamics_state_to_physics_state
@@ -76,8 +76,8 @@ class Predictions:
 
         # prepare physics predictions for xarray conversion
         # (e.g. separate multi-channel fields so they are compatible with data_to_xarray)
-        physics_module = physics_module or SpeedyPhysics()
-        physics_preds_dict = physics_module.data_struct_to_dict(physics_predictions, geometry=Geometry.from_coords(coords))
+        physics_module = physics_module or SpeedyPhysics(coords=coords)
+        physics_preds_dict = physics_module.data_struct_to_dict(physics_predictions, nodal_shape=nodal_shape)
 
         times = jax.device_get(self.times)
         coords = jax.device_get(coords)
@@ -194,25 +194,25 @@ def averaged_trajectory_from_step(
 class Model:
     """Top level class for a JAX-GCM configuration using the Speedy physics on an aquaplanet."""
 
-    def __init__(self, time_step=30.0, geometry: Geometry=None, coords: CoordinateSystem=None,
+    def __init__(self, time_step=30.0, terrain: TerrainData=None, coords: CoordinateSystem=None,
                  physics: Physics=None, diffusion: DiffusionFilter=None, spmd_mesh: tuple[int, ...]=None,
                  start_date: jdt.Datetime=jdt.to_datetime('2000-01-01')) -> None:
         """Initialize the model with the given time step, save interval, and total time.
-        
+
         Args:
             time_step:
                 Model time step in minutes
-            geometry: 
-                Geometry object describing the model grid and orography of the model
+            terrain:
+                TerrainData object describing boundary conditions (orography, land-sea mask, etc.)
             coords:
                 CoordinateSystem object describing the model coordinates
-            physics: 
+            physics:
                 Physics object describing the model physics
             diffusion:
                 DiffusionFilter object describing horizontal diffusion filter params
             spmd_mesh:
                 Optional tuple describing the SPMD mesh for parallelization
-            start_date: 
+            start_date:
                 jax_datetime.Datetime object containing start date of the simulation (default January 1, 2000)
 
         """
@@ -220,13 +220,11 @@ class Model:
         self.dt_si = (time_step * units.minute).to(units.second)
         self.dt = self.physics_specs.nondimensionalize(self.dt_si)
 
-        # Store coords separately - it's used by dynamics but not physics (and can't easily be jitted)
-        if geometry is not None: # user-specified geometry takes precedence
-            self.geometry = geometry
-            self.coords = coords_from_geometry(geometry, spmd_mesh=spmd_mesh)
-        else:
-            self.coords = coords if coords is not None else get_coords(spmd_mesh=spmd_mesh)
-            self.geometry = Geometry.from_coords(coords=self.coords)
+        # Store coords - used by dynamics and physics
+        self.coords = coords if coords is not None else get_coords(spmd_mesh=spmd_mesh)
+
+        # Store terrain (boundary conditions)
+        self.terrain = terrain if terrain is not None else TerrainData.aquaplanet(self.coords)
 
         # Get the reference temperature and orography. This also returns the initial state function (if wanted to start from rest)
         self.default_state_fn, aux_features = primitive_equations_states.isothermal_rest_atmosphere(
@@ -235,12 +233,16 @@ class Model:
             p0=p0*units.pascal,
         )
         
-        self.physics = physics or SpeedyPhysics()
+        self.physics = physics or SpeedyPhysics(coords=self.coords)
+
+        # Ensure physics has coords set (important for SpeedyPhysics)
+        if hasattr(self.physics, 'coords') and self.physics.coords is None:
+            self.physics.coords = self.coords
 
         self.diffusion = diffusion or DiffusionFilter.default()
 
         # TODO: make the truncation number a parameter consistent with the grid shape
-        self.truncated_orography = primitive_equations.truncated_modal_orography(self.geometry.orog, self.coords, wavenumbers_to_clip=2)
+        self.truncated_orography = primitive_equations.truncated_modal_orography(self.terrain.orog, self.coords, wavenumbers_to_clip=2)
 
         self.primitive = primitive_equations.PrimitiveEquations(
             reference_temperature=aux_features[dinosaur.xarray_utils.REF_TEMP_KEY],
@@ -369,8 +371,8 @@ class Model:
                 time_step=self.dt_si.m,
                 physics=self.physics,
                 forcing=forcing,
+                terrain=self.terrain,
                 diffusion=self.diffusion,
-                geometry=self.geometry,
                 date=self._date_from_sim_time(state.sim_time),
                 diagnostics_collector=d
             )
@@ -402,7 +404,7 @@ class Model:
         if not output_averages:
             date = self._date_from_sim_time(state.sim_time)
             clamped_physics_state = verify_state(predictions.dynamics)
-            _, physics_data = self.physics.compute_tendencies(clamped_physics_state, forcing, self.geometry, date)
+            _, physics_data = self.physics.compute_tendencies(clamped_physics_state, forcing, self.terrain, date)
             predictions = predictions.replace(physics=physics_data)
 
         return predictions
@@ -420,7 +422,7 @@ class Model:
             )
 
             # integrate_fn for avgs has different signature b/c empty physics data structure needed for DiagnosticsCollector initialization
-            return integrate_fn(state, self.physics.get_empty_data(self.geometry)) if output_averages else integrate_fn(state)
+            return integrate_fn(state, self.physics.get_empty_data(self.coords)) if output_averages else integrate_fn(state)
 
         return _integrate_fn
 

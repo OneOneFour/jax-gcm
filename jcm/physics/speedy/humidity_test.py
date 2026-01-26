@@ -18,7 +18,8 @@ class TestHumidityUnit(unittest.TestCase):
         from jcm.forcing import ForcingData
         from jcm.physics.speedy.params import Parameters
         parameters = Parameters.default()
-        from jcm.geometry import Geometry
+        from jcm.terrain_data import TerrainData
+from jcm.utils import get_coords
         from jcm.physics.speedy.test_utils import convert_to_speedy_latitudes
         default_geometry = convert_to_speedy_latitudes(Geometry.from_grid_shape(nodal_shape=(ix, il), num_levels=kx))
 
@@ -192,8 +193,8 @@ class TestHumidityUnit(unittest.TestCase):
         state = PhysicsState.zeros(zxy,temperature=temp, specific_humidity=qg,normalized_surface_pressure=pressure)
         _, physics_data = spec_hum_to_rel_hum(physics_data=physics_data, state=state, parameters=parameters, forcing=forcing, geometry=default_geometry)
 
-        def f(temp_0, pressure, geometry_fsg, physics_data_h_rh):
-            return rel_hum_to_spec_hum(temp_0, pressure, geometry_fsg, physics_data_h_rh)
+        def f(temp_0, pressure, terrain_fsg, physics_data_h_rh):
+            return rel_hum_to_spec_hum(temp_0, pressure, terrain_fsg, physics_data_h_rh)
         
         # Calculate gradient
         f_jvp = functools.partial(jax.jvp, f)
@@ -224,14 +225,14 @@ class TestHumidityUnit(unittest.TestCase):
         state_floats = convert_to_float(state)
         parameters_floats = convert_to_float(parameters)
         forcing_floats = convert_to_float(forcing)
-        geometry_floats = convert_to_float(default_geometry)
+        terrain_floats = convert_to_float(default_geometry)
 
-        def f(physics_data_f, state_f, parameters_f, forcing_f,geometry_f):
+        def f(physics_data_f, state_f, parameters_f, forcing_f,terrain_f):
             tend_out, data_out = spec_hum_to_rel_hum(physics_data=convert_back(physics_data_f, physics_data), 
                                        state=convert_back(state_f, state), 
                                        parameters=convert_back(parameters_f, parameters), 
                                        forcing=convert_back(forcing_f, forcing), 
-                                       geometry=convert_back(geometry_f, default_geometry)
+                                       geometry=convert_back(terrain_f, default_geometry)
                                        )
             return convert_to_float(data_out.humidity)
         
@@ -239,9 +240,9 @@ class TestHumidityUnit(unittest.TestCase):
         f_jvp = functools.partial(jax.jvp, f)
         f_vjp = functools.partial(jax.vjp, f)  
 
-        check_vjp(f, f_vjp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, geometry_floats), 
+        check_vjp(f, f_vjp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.00001)
-        check_jvp(f, f_jvp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, geometry_floats), 
+        check_jvp(f, f_jvp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.000001)
 
 
@@ -249,9 +250,9 @@ class TestHumidityUnit(unittest.TestCase):
         temp = jnp.ones((kx,ix,il))*330
         state = PhysicsState.ones(zxy,temperature=temp, specific_humidity=qg, normalized_surface_pressure=pressure)
         state_floats = convert_to_float(state)
-        check_vjp(f, f_vjp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, geometry_floats), 
+        check_vjp(f, f_vjp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.00001)
-        check_jvp(f, f_jvp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, geometry_floats), 
+        check_jvp(f, f_jvp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.0001)
 
 
@@ -259,9 +260,9 @@ class TestHumidityUnit(unittest.TestCase):
         pressure = jnp.ones((ix,il))*10
         state.normalized_surface_pressure = pressure
         state_floats = convert_to_float(state)
-        check_vjp(f, f_vjp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, geometry_floats), 
+        check_vjp(f, f_vjp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.00001)
-        check_jvp(f, f_jvp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, geometry_floats), 
+        check_jvp(f, f_jvp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.000001)
 
 
@@ -271,9 +272,9 @@ class TestHumidityUnit(unittest.TestCase):
         qg = jnp.ones((kx,ix,il))*(physics_data.humidity.qsat[:, 0, 0][:, jnp.newaxis, jnp.newaxis] - 1e-6)
         state = state.copy(specific_humidity=qg)
         state_floats = convert_to_float(state)
-        check_vjp(f, f_vjp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, geometry_floats), 
+        check_vjp(f, f_vjp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.00001)
-        check_jvp(f, f_jvp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, geometry_floats), 
+        check_jvp(f, f_jvp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.000001)
         
 

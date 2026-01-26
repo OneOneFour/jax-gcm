@@ -7,13 +7,14 @@ class TestGeometryUnit(unittest.TestCase):
 
     def setUp(self):
         global ix, il, kx, Geometry
-        from jcm.geometry import Geometry
+        from jcm.terrain_data import TerrainData
+from jcm.utils import get_coords
         ix, il, kx = 96, 48, 8
 
     def test_from_coords(self):
         from jcm.utils import get_coords
         coords = get_coords(layers=kx, spectral_truncation=31)
-        geo = Geometry.from_coords(coords)
+        geo = TerrainData.from_coords(coords)
         has_nans = any(jnp.isnan(x).any() for x in jtu.tree_leaves(geo) if isinstance(x, jnp.ndarray))
         self.assertFalse(has_nans)
 
@@ -23,7 +24,7 @@ class TestGeometryUnit(unittest.TestCase):
         self.assertFalse(has_nans)
 
     def test_single_column(self):
-        geo = Geometry.single_column_geometry(num_levels=kx)
+        geo = TerrainData.single_column(num_levels=kx)
         has_nans = any(jnp.isnan(x).any() for x in jtu.tree_leaves(geo) if isinstance(x, jnp.ndarray))
         self.assertFalse(has_nans)
 

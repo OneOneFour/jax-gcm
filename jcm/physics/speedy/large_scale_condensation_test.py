@@ -15,9 +15,10 @@ class TestLargeScaleCondensationUnit(unittest.TestCase):
         from jcm.physics.speedy.physics_data import ConvectionData, HumidityData, PhysicsData
         from jcm.physics_interface import PhysicsState, PhysicsTendency
         from jcm.physics.speedy.params import Parameters
-        from jcm.geometry import Geometry
+        from jcm.terrain_data import TerrainData
+from jcm.utils import get_coords
         parameters = Parameters.default()
-        geometry = Geometry.single_column_geometry(num_levels=8)
+        geometry = TerrainData.single_column(num_levels=8)
         from jcm.forcing import ForcingData
         from jcm.physics.speedy.large_scale_condensation import get_large_scale_condensation_tendencies
 
@@ -115,14 +116,14 @@ class TestLargeScaleCondensationUnit(unittest.TestCase):
         state_floats = convert_to_float(state)
         parameters_floats = convert_to_float(parameters)
         forcing_floats = convert_to_float(forcing)
-        geometry_floats = convert_to_float(geometry)
+        terrain_floats = convert_to_float(geometry)
 
-        def f(physics_data_f, state_f, parameters_f, forcing_f,geometry_f):
+        def f(physics_data_f, state_f, parameters_f, forcing_f,terrain_f):
             tend_out, data_out = get_large_scale_condensation_tendencies(physics_data=convert_back(physics_data_f, physics_data), 
                                        state=convert_back(state_f, state), 
                                        parameters=convert_back(parameters_f, parameters), 
                                        forcing=convert_back(forcing_f, forcing), 
-                                       geometry=convert_back(geometry_f, geometry)
+                                       geometry=convert_back(terrain_f, geometry)
                                        )
             return convert_to_float(tend_out), convert_to_float(data_out)
         
@@ -130,9 +131,9 @@ class TestLargeScaleCondensationUnit(unittest.TestCase):
         f_jvp = functools.partial(jax.jvp, f)
         f_vjp = functools.partial(jax.vjp, f)  
 
-        check_vjp(f, f_vjp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, geometry_floats), 
+        check_vjp(f, f_vjp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.00001)
-        check_jvp(f, f_jvp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, geometry_floats), 
+        check_jvp(f, f_jvp, args = (physics_data_floats, state_floats, parameters_floats, forcing_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.001)
 
 

@@ -3,7 +3,7 @@ from typing import Tuple
 from dinosaur.scales import units
 from dinosaur import coordinate_systems
 from jcm.utils import get_coords
-from jcm.geometry import Geometry
+from jcm.terrain_data import TerrainData
 from jcm.forcing import ForcingData
 from jcm.physics_interface import PhysicsState, PhysicsTendency, Physics
 from jcm.model import PHYSICS_SPECS
@@ -77,7 +77,7 @@ class HeldSuarezPhysics(Physics):
         self,
         state: PhysicsState,
         forcing: ForcingData,
-        geometry: Geometry,
+        terrain: TerrainData,
         date: DateData,
     ) -> Tuple[PhysicsTendency, None]:
         """Compute the physical tendencies given the current state and data structs. Tendencies are computed as a Held-Suarez forcing.
@@ -85,7 +85,7 @@ class HeldSuarezPhysics(Physics):
         Args:
             state: Current state variables
             forcing: Forcing data (unused)
-            geometry: Geometry data (unused)
+            terrain: Terrain data (unused)
             date: Date data (unused)
 
         Returns:

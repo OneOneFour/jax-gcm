@@ -27,7 +27,8 @@ from jcm.physics.speedy.orographic_correction import (
 )
 from jcm.physics_interface import PhysicsState, PhysicsTendency
 from jcm.forcing import default_forcing, ForcingData
-from jcm.geometry import Geometry
+from jcm.terrain_data import TerrainData
+from jcm.utils import get_coords
 from jcm.utils import get_coords
 from jcm.physics.speedy.params import Parameters
 from jcm.physics.speedy.physics_data import PhysicsData
@@ -154,7 +155,7 @@ class TestOrographicCorrection:
         assert tcorh.shape == (96, 48)
         
         # Check that maximum correction occurs where orography is highest
-        max_orog_idx = jnp.unravel_index(jnp.argmax(geometry.orog), geometry.orog.shape)
+        max_orog_idx = jnp.unravel_index(jnp.argmax(terrain.orog), terrain.orog.shape)
         max_corr_idx = jnp.unravel_index(jnp.argmax(tcorh), tcorh.shape)
         assert max_orog_idx == max_corr_idx
     
@@ -167,7 +168,7 @@ class TestOrographicCorrection:
         tcorh = compute_temperature_correction_horizontal(geometry)
         land_temp = jnp.full((96, 48), 288.0)  # Constant land temperature
         
-        qcorh = compute_humidity_correction_horizontal(forcing, geometry.fmask, tcorh, land_temp)
+        qcorh = compute_humidity_correction_horizontal(forcing, terrain.fmask, tcorh, land_temp)
         
         # Check shape
         assert qcorh.shape == (96, 48)
@@ -278,7 +279,7 @@ class TestOrographicCorrection:
     def test_speedy_fortran_numerical_equivalence(self):
         """Test numerical equivalence with SPEEDY Fortran implementation."""
         # Use actual JAX-GCM geometry with 8 layers to get correct sigma levels
-        geometry_fortran = create_test_geometry(layers=8)
+        terrain_fortran = create_test_geometry(layers=8)
         parameters = Parameters.default()
         
         # Test orography used with Fortran (4x4 grid)
@@ -292,7 +293,7 @@ class TestOrographicCorrection:
         # phis0 = g * orog (as in Fortran)
         test_phis0 = grav * test_orog
 
-        geometry_fortran = geometry_fortran.replace(orog=test_orog, phis0=test_phis0)
+        terrain_fortran = terrain_fortran.replace(orog=test_orog, phis0=test_phis0)
         
         # Reference values from SPEEDY Fortran test output (correct gamma=6.0, grav=9.81)
         fortran_tcorv = jnp.array([
@@ -315,9 +316,9 @@ class TestOrographicCorrection:
         ])
         
         # Compute JAX-GCM values
-        jax_tcorv = compute_temperature_correction_vertical_profile(geometry_fortran, parameters)
-        jax_qcorv = compute_humidity_correction_vertical_profile(geometry_fortran, parameters)
-        jax_tcorh = compute_temperature_correction_horizontal(geometry_fortran)
+        jax_tcorv = compute_temperature_correction_vertical_profile(terrain_fortran, parameters)
+        jax_qcorv = compute_humidity_correction_vertical_profile(terrain_fortran, parameters)
+        jax_tcorh = compute_temperature_correction_horizontal(terrain_fortran)
         
         # Test temperature vertical profile - should match within floating-point precision
         np.testing.assert_allclose(jax_tcorv, fortran_tcorv, rtol=1e-3, atol=1e-6,
@@ -344,7 +345,7 @@ class TestOrographicCorrection:
         
         # boundaries_fortran = TestBoundariesFortran()
 
-        # jax_qcorh = compute_humidity_correction_horizontal(boundaries_fortran, geometry_fortran, jax_tcorh, test_stl_am) # FIXME: missing fortran_qcorh
+        # jax_qcorh = compute_humidity_correction_horizontal(boundaries_fortran, terrain_fortran, jax_tcorh, test_stl_am) # FIXME: missing fortran_qcorh
     
     def test_edge_cases(self):
         """Test edge cases and boundary conditions."""
@@ -361,8 +362,8 @@ class TestOrographicCorrection:
         assert jnp.allclose(tcorh_flat, 0.0, atol=1e-5)
         
         # Humidity correction should also be zero when orography is zero
-        land_temp_flat = jnp.full(geometry.orog.shape, 288.0)
-        qcorh_flat = compute_humidity_correction_horizontal(boundaries_flat, geometry.fmask, tcorh_flat, land_temp_flat)
+        land_temp_flat = jnp.full(terrain.orog.shape, 288.0)
+        qcorh_flat = compute_humidity_correction_horizontal(boundaries_flat, terrain.fmask, tcorh_flat, land_temp_flat)
         assert jnp.allclose(qcorh_flat, 0.0, atol=1e-5)
         
         # test that total corrections are zero for flat orography
@@ -423,19 +424,19 @@ class TestOrographicCorrection:
 
         # Set float inputs
         parameters_floats = convert_to_float(parameters)
-        geometry_floats = convert_to_float(geometry)
+        terrain_floats = convert_to_float(geometry)
 
-        def f(parameters_f, geometry_f):
+        def f(parameters_f, terrain_f):
             return compute_temperature_correction_vertical_profile(parameters=convert_back(parameters_f, parameters), 
-                                       geometry=convert_back(geometry_f, geometry)
+                                       geometry=convert_back(terrain_f, geometry)
                                        )
         # Calculate gradient
         f_jvp = functools.partial(jax.jvp, f)
         f_vjp = functools.partial(jax.vjp, f)  
 
-        check_vjp(f, f_vjp, args = (parameters_floats, geometry_floats), 
+        check_vjp(f, f_vjp, args = (parameters_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.00001)
-        check_jvp(f, f_jvp, args = (parameters_floats, geometry_floats), 
+        check_jvp(f, f_jvp, args = (parameters_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.00001)
         
     def test_humidity_vertical_profile_gradient_check(self):
@@ -446,19 +447,19 @@ class TestOrographicCorrection:
 
         # Set float inputs
         parameters_floats = convert_to_float(parameters)
-        geometry_floats = convert_to_float(geometry)
+        terrain_floats = convert_to_float(geometry)
 
-        def f(parameters_f, geometry_f):
+        def f(parameters_f, terrain_f):
             return compute_humidity_correction_vertical_profile(parameters=convert_back(parameters_f, parameters), 
-                                       geometry=convert_back(geometry_f, geometry)
+                                       geometry=convert_back(terrain_f, geometry)
                                        )
         # Calculate gradient
         f_jvp = functools.partial(jax.jvp, f)
         f_vjp = functools.partial(jax.vjp, f)  
 
-        check_vjp(f, f_vjp, args = (parameters_floats, geometry_floats), 
+        check_vjp(f, f_vjp, args = (parameters_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.00001)
-        check_jvp(f, f_jvp, args = (parameters_floats, geometry_floats), 
+        check_jvp(f, f_jvp, args = (parameters_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.00001)
     
     def test_temperature_horizontal_correction_gradient_check(self):
@@ -467,17 +468,17 @@ class TestOrographicCorrection:
         geometry = create_test_geometry()
 
         # Set float inputs
-        geometry_floats = convert_to_float(geometry)
+        terrain_floats = convert_to_float(geometry)
 
-        def f(geometry_f):
-            return compute_temperature_correction_horizontal(geometry=convert_back(geometry_f, geometry))
+        def f(terrain_f):
+            return compute_temperature_correction_horizontal(geometry=convert_back(terrain_f, geometry))
         # Calculate gradient
         f_jvp = functools.partial(jax.jvp, f)
         f_vjp = functools.partial(jax.vjp, f)  
 
-        check_vjp(f, f_vjp, args = (geometry_floats,), 
+        check_vjp(f, f_vjp, args = (terrain_floats,), 
                                 atol=None, rtol=1, eps=0.000001)
-        check_jvp(f, f_jvp, args = (geometry_floats,), 
+        check_jvp(f, f_jvp, args = (terrain_floats,), 
                                 atol=None, rtol=1, eps=0.00001)
     
     @pytest.mark.skip(reason="Currently fails due to, presumably, non-differentiable operations.")
@@ -498,7 +499,7 @@ class TestOrographicCorrection:
         def f(forcing_f, tcorh, land_temp):
             return compute_humidity_correction_horizontal(
                 forcing=convert_back(forcing_f, forcing), 
-                fmask=geometry.fmask,
+                fmask=terrain.fmask,
                 temperature_correction=tcorh, 
                 land_temperature=land_temp
             )
@@ -530,14 +531,14 @@ class TestOrographicCorrection:
         physics_data_floats = convert_to_float(physics_data)
         parameters_floats = convert_to_float(parameters)
         forcing_floats = convert_to_float(forcing)
-        geometry_floats = convert_to_float(geometry)
+        terrain_floats = convert_to_float(geometry)
 
-        def f(state_f, physics_data_f, parameters_f, forcing_f,geometry_f):
+        def f(state_f, physics_data_f, parameters_f, forcing_f,terrain_f):
             tend_out, data_out = get_orographic_correction_tendencies(state=convert_back(state_f, state), 
                                        physics_data=convert_back(physics_data_f, physics_data),
                                        parameters=convert_back(parameters_f, parameters), 
                                        forcing=convert_back(forcing_f, forcing), 
-                                       geometry=convert_back(geometry_f, geometry)
+                                       geometry=convert_back(terrain_f, geometry)
                                        )
             return convert_to_float(tend_out), convert_to_float(data_out)
         
@@ -545,9 +546,9 @@ class TestOrographicCorrection:
         f_jvp = functools.partial(jax.jvp, f)
         f_vjp = functools.partial(jax.vjp, f)  
 
-        check_vjp(f, f_vjp, args = (state_floats, physics_data_floats, parameters_floats, forcing_floats, geometry_floats), 
+        check_vjp(f, f_vjp, args = (state_floats, physics_data_floats, parameters_floats, forcing_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.000001)
-        check_jvp(f, f_jvp, args = (state_floats, physics_data_floats, parameters_floats, forcing_floats, geometry_floats), 
+        check_jvp(f, f_jvp, args = (state_floats, physics_data_floats, parameters_floats, forcing_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.001)
     
     @pytest.mark.skip(reason="Currently fails due to instability.")
@@ -566,13 +567,13 @@ class TestOrographicCorrection:
         state_floats = convert_to_float(state)
         parameters_floats = convert_to_float(parameters)
         forcing_floats = convert_to_float(forcing)
-        geometry_floats = convert_to_float(geometry)
+        terrain_floats = convert_to_float(geometry)
 
-        def f(state_f, parameters_f, forcing_f,geometry_f):
+        def f(state_f, parameters_f, forcing_f,terrain_f):
             state_out = apply_orographic_corrections_to_state(state=convert_back(state_f, state), 
                                        parameters=convert_back(parameters_f, parameters), 
                                        forcing=convert_back(forcing_f, forcing), 
-                                       geometry=convert_back(geometry_f, geometry)
+                                       geometry=convert_back(terrain_f, geometry)
                                        )
             return convert_to_float(state_out)
         
@@ -580,9 +581,9 @@ class TestOrographicCorrection:
         f_jvp = functools.partial(jax.jvp, f)
         f_vjp = functools.partial(jax.vjp, f)  
 
-        check_vjp(f, f_vjp, args = (state_floats, parameters_floats, forcing_floats, geometry_floats), 
+        check_vjp(f, f_vjp, args = (state_floats, parameters_floats, forcing_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.00001)
-        check_jvp(f, f_jvp, args = (state_floats, parameters_floats, forcing_floats, geometry_floats), 
+        check_jvp(f, f_jvp, args = (state_floats, parameters_floats, forcing_floats, terrain_floats), 
                                 atol=None, rtol=1, eps=0.00001)
         
 if __name__ == "__main__":

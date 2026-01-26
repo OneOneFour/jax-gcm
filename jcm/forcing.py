@@ -14,12 +14,11 @@ class ForcingData:
     soilw_am: jnp.ndarray # soil moisture (used to be soilwcl_ob in fortran - but one day of that was soilw_am)
     stl_am: jnp.ndarray # temperature over land
     sea_surface_temperature: jnp.ndarray # SST, should come from sea_model.py or some default value
-    lfluxland: jnp.bool_
 
     @classmethod
     def zeros(cls,nodal_shape,
               alb0=None,sice_am=None,snowc_am=None,
-              soilw_am=None,stl_am=None,sea_surface_temperature=None,lfluxland=None):
+              soilw_am=None,stl_am=None,sea_surface_temperature=None):
         return cls(
             alb0=alb0 if alb0 is not None else jnp.zeros((nodal_shape)),
             sice_am=sice_am if sice_am is not None else jnp.zeros((nodal_shape)),
@@ -27,13 +26,12 @@ class ForcingData:
             soilw_am=soilw_am if soilw_am is not None else jnp.zeros((nodal_shape)),
             stl_am =stl_am if stl_am is not None else jnp.zeros((nodal_shape)),
             sea_surface_temperature=sea_surface_temperature if sea_surface_temperature is not None else jnp.zeros((nodal_shape)),
-            lfluxland=lfluxland if lfluxland is not None else jnp.bool_(False),
         )
 
     @classmethod
     def ones(cls,nodal_shape,
              alb0=None,sice_am=None,snowc_am=None,
-             soilw_am=None,stl_am=None,sea_surface_temperature=None,lfluxland=None):
+             soilw_am=None,stl_am=None,sea_surface_temperature=None):
         return cls(
             alb0=alb0 if alb0 is not None else jnp.ones((nodal_shape)),
             sice_am=sice_am if sice_am is not None else jnp.ones((nodal_shape)),
@@ -41,7 +39,6 @@ class ForcingData:
             soilw_am=soilw_am if soilw_am is not None else jnp.ones((nodal_shape)),
             stl_am =stl_am if stl_am is not None else jnp.ones((nodal_shape)),
             sea_surface_temperature=sea_surface_temperature if sea_surface_temperature is not None else jnp.ones((nodal_shape)),
-            lfluxland=lfluxland if lfluxland is not None else jnp.bool_(True),
         )
     
     @classmethod
@@ -107,12 +104,12 @@ class ForcingData:
         return cls.zeros(
             nodal_shape=alb0.shape,
             alb0=alb0, sice_am=sice_am, snowc_am=snowc_am,stl_am=stl_am,
-            soilw_am=soilw_am, sea_surface_temperature=sea_surface_temperature,lfluxland=True
+            soilw_am=soilw_am, sea_surface_temperature=sea_surface_temperature
         )
 
     def copy(self,alb0=None,
              sice_am=None,snowc_am=None,soilw_am=None, stl_am=None,
-             sea_surface_temperature=None,lfluxland=None):
+             sea_surface_temperature=None):
         return ForcingData(
             alb0=alb0 if alb0 is not None else self.alb0,
             sice_am=sice_am if sice_am is not None else self.sice_am,
@@ -120,11 +117,9 @@ class ForcingData:
             soilw_am = soilw_am if soilw_am is not None else self.soilw_am,
             stl_am =stl_am if stl_am is not None else self.stl_am,
             sea_surface_temperature=sea_surface_temperature if sea_surface_temperature is not None else self.sea_surface_temperature,
-            lfluxland=lfluxland if lfluxland is not None else self.lfluxland,
         )
 
     def isnan(self):
-        self.lfluxland = 0
         return tree_util.tree_map(jnp.isnan, self)
 
     def any_true(self):

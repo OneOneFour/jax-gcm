@@ -1,7 +1,8 @@
 import jax.numpy as jnp
-from jcm.geometry import Geometry
+from jcm.terrain_data import TerrainData
+from jcm.utils import get_coords
 
-def convert_to_speedy_latitudes(geometry: Geometry) -> Geometry:
+def convert_to_speedy_latitudes(terrain: TerrainData) -> Geometry:
     # Recompute horizontal fields for speedy latitudes
     il = geometry.nodal_shape[2]
     iy = (il + 1)//2
@@ -12,6 +13,6 @@ def convert_to_speedy_latitudes(geometry: Geometry) -> Geometry:
     coa = jnp.cos(radang)
 
     # Changing latitudes makes phis0 incorrect unless orography is flat
-    phis0 = geometry.phis0 if jnp.allclose(geometry.orog, geometry.orog[0,0]) else jnp.full_like(geometry.phis0, jnp.nan)
+    phis0 = terrain.phis0 if jnp.allclose(terrain.orog, terrain.orog[0,0]) else jnp.full_like(terrain.phis0, jnp.nan)
     
     return geometry.replace(phis0=phis0, radang=radang, sia=sia, coa=coa)
