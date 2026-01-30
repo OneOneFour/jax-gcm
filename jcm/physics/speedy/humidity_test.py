@@ -11,7 +11,7 @@ class TestHumidityUnit(unittest.TestCase):
         ix, il, kx = 96, 48, 8
 
         global ConvectionData, PhysicsData, PhysicsState, get_qsat, spec_hum_to_rel_hum, rel_hum_to_spec_hum, fsg, PhysicsTendency, \
-        SurfaceFluxData, HumidityData, SWRadiationData, LWRadiationData, parameters, ForcingData, Geometry, convert_to_speedy_latitudes, default_geometry
+        SurfaceFluxData, HumidityData, SWRadiationData, LWRadiationData, parameters, ForcingData, coords, speedy_coords, terrain
         from jcm.physics.speedy.physics_data import ConvectionData, PhysicsData, SurfaceFluxData, HumidityData, SWRadiationData, LWRadiationData
         from jcm.physics_interface import PhysicsState, PhysicsTendency
         from jcm.physics.speedy.humidity import get_qsat, spec_hum_to_rel_hum, rel_hum_to_spec_hum
@@ -19,11 +19,14 @@ class TestHumidityUnit(unittest.TestCase):
         from jcm.physics.speedy.params import Parameters
         parameters = Parameters.default()
         from jcm.terrain_data import TerrainData
-        from jcm.utils import get_coords
-        from jcm.physics.speedy.test_utils import convert_to_speedy_latitudes
+        # from jcm.physics.speedy.test_utils import convert_to_speedy_latitudes
+        from jcm.physics.speedy.utils import get_speedy_coords
+        from jcm.terrain_data import TerrainData
+        from jcm.physics.speedy.speedy_coords import speedy_coords_from_coordinate_system
 
-        ## TODO: FIX reference to geometry
-        default_geometry = convert_to_speedy_latitudes(Geometry.from_grid_shape(nodal_shape=(ix, il), num_levels=kx))
+        coords = get_speedy_coords(layers=kx, nodal_shape=(ix, il))
+        terrain = TerrainData.aquaplanet(coords)
+        speedy_coords = speedy_coords_from_coordinate_system(coords)
 
         self.temp_standard = jnp.ones((kx,ix,il))*273
         self.pressure_standard = jnp.ones((ix,il)) # normalized surface pressure
@@ -48,7 +51,6 @@ class TestHumidityUnit(unittest.TestCase):
         rsds = 400. * jnp.ones((ix, il)) #surface downward shortwave
         rlds = 400. * jnp.ones((ix, il)) #surface downward longwave
 
-        geometry = convert_to_speedy_latitudes(Geometry.from_grid_shape(nodal_shape=(ix, il), num_levels=kx, orography=phi0/grav, fmask=fmask))
         forcing = ForcingData.ones(xy,sea_surface_temperature=sea_surface_temperature)
             
         state = PhysicsState.zeros(zxy,ua, va, ta, qa, phi, psa)
@@ -57,15 +59,15 @@ class TestHumidityUnit(unittest.TestCase):
         conv_data = ConvectionData.zeros(xy,kx)
         sw_rad = SWRadiationData.zeros(xy,kx,rsds=rsds)
         lw_rad = LWRadiationData.zeros(xy,kx)
-        physics_data = PhysicsData.zeros(xy,kx,convection=conv_data,humidity=hum_data,surface_flux=sflux_data,shortwave_rad=sw_rad,longwave_rad=lw_rad)
+        physics_data = PhysicsData.zeros(xy,kx,convection=conv_data,humidity=hum_data,surface_flux=sflux_data,shortwave_rad=sw_rad,longwave_rad=lw_rad, speedy_coords=speedy_coords)
 
-        _, f_vjp = jax.vjp(spec_hum_to_rel_hum, state, physics_data, parameters, forcing, geometry) 
+        _, f_vjp = jax.vjp(spec_hum_to_rel_hum, state, physics_data, parameters, forcing, terrain) 
         
         tends = PhysicsTendency.ones(zxy)
-        datas = PhysicsData.ones(xy, kx)
+        datas = PhysicsData.ones(xy, kx, speedy_coords=speedy_coords)
         input = (tends, datas)
         
-        df_dstates, df_ddatas, df_dparams, df_dforcing, df_dgeometry = f_vjp(input)
+        df_dstates, df_ddatas, df_dparams, df_dforcing, df_dterrain = f_vjp(input)
 
         self.assertFalse(df_ddatas.isnan().any_true())
         self.assertFalse(df_dstates.isnan().any_true())
@@ -101,25 +103,25 @@ class TestHumidityUnit(unittest.TestCase):
         xy = (ix,il)
 
         convection_data = ConvectionData.zeros((ix,il), kx)
-        physics_data = PhysicsData.zeros((ix,il), kx, convection=convection_data)
+        physics_data = PhysicsData.zeros((ix,il), kx, convection=convection_data, speedy_coords=speedy_coords)
         forcing = ForcingData.ones(xy)
 
         # Edge case: Zero Specific Humidity
         qg = jnp.ones((kx,ix,il))*0
         state = PhysicsState.zeros(zxy,temperature=temp, specific_humidity=qg, normalized_surface_pressure=pressure)
-        _, physics_data = spec_hum_to_rel_hum(physics_data=physics_data, state=state, parameters=parameters, forcing=forcing, geometry=default_geometry)
+        _, physics_data = spec_hum_to_rel_hum(physics_data=physics_data, state=state, parameters=parameters, forcing=forcing, terrain=terrain)
         self.assertTrue((physics_data.humidity.rh == 0).all(), "Relative humidity should be 0 when specific humidity is 0")
 
         # Edge case: Very High Temperature
         temp = jnp.ones((kx,ix,il))*400
         state = PhysicsState.zeros(zxy,temperature=temp, specific_humidity=qg, normalized_surface_pressure=pressure)
-        _, physics_data = spec_hum_to_rel_hum(physics_data=physics_data, state=state, parameters=parameters, forcing=forcing, geometry=default_geometry)
+        _, physics_data = spec_hum_to_rel_hum(physics_data=physics_data, state=state, parameters=parameters, forcing=forcing, terrain=terrain)
         self.assertTrue(((physics_data.humidity.rh >= 0) & (physics_data.humidity.rh <= 1)).all(), "Relative humidity should be between 0 and 1 at very high temperatures")
 
         # Edge case: Extremely High Pressure
         pressure = jnp.ones((ix,il))*10
         state.normalized_surface_pressure = pressure
-        _, physics_data = spec_hum_to_rel_hum(physics_data=physics_data, state=state, parameters=parameters, forcing=forcing, geometry=default_geometry)
+        _, physics_data = spec_hum_to_rel_hum(physics_data=physics_data, state=state, parameters=parameters, forcing=forcing, terrain=terrain)
         self.assertTrue(((physics_data.humidity.rh >= 0) & (physics_data.humidity.rh <= 1)).all(), "Relative humidity should be between 0 and 1 at very high pressures")
 
         # Edge case: High Specific Humidity (near saturation)
@@ -127,7 +129,7 @@ class TestHumidityUnit(unittest.TestCase):
         temp = self.temp_standard
         qg = jnp.ones((kx,ix,il))*(physics_data.humidity.qsat[:, 0, 0][:, jnp.newaxis, jnp.newaxis] - 1e-6)
         state = state.copy(specific_humidity=qg)
-        _, physics_data = spec_hum_to_rel_hum(physics_data=physics_data, state=state, parameters=parameters, forcing=forcing, geometry=default_geometry)
+        _, physics_data = spec_hum_to_rel_hum(physics_data=physics_data, state=state, parameters=parameters, forcing=forcing, terrain=terrain)
         self.assertTrue((physics_data.humidity.rh >= 0.99).all() and (physics_data.humidity.rh <= 1).all(), "Relative humidity should be close to 1 when specific humidity is near qsat")
 
     def test_rel_hum_to_spec_hum(self):
@@ -139,11 +141,11 @@ class TestHumidityUnit(unittest.TestCase):
         forcing = ForcingData.ones(xy)
 
         convection_data = ConvectionData.zeros((ix,il), kx)
-        physics_data = PhysicsData.zeros((ix,il), kx, convection=convection_data)
+        physics_data = PhysicsData.zeros((ix,il), kx, convection=convection_data, speedy_coords=speedy_coords)
         state = PhysicsState.zeros(zxy,temperature=temp, specific_humidity=qg,normalized_surface_pressure=pressure)
 
-        _, physics_data = spec_hum_to_rel_hum(physics_data=physics_data, state=state, parameters=parameters, forcing=forcing, geometry=default_geometry)
-        qa, qsat = rel_hum_to_spec_hum(temp[0], pressure, default_geometry.fsg[0], physics_data.humidity.rh[0])
+        _, physics_data = spec_hum_to_rel_hum(physics_data=physics_data, state=state, parameters=parameters, forcing=forcing, terrain=terrain)
+        qa, qsat = rel_hum_to_spec_hum(temp[0], pressure, speedy_coords.fsg[0], physics_data.humidity.rh[0])
         # Allow a small tolerance for floating point comparisons
         tolerance = 1e-6
         self.assertTrue(jnp.allclose(qa, qg[0], atol=tolerance), "QA should be close to the original QG when converted from RH")
@@ -191,9 +193,9 @@ class TestHumidityUnit(unittest.TestCase):
         xy = (ix,il)
         forcing = ForcingData.ones(xy)
         convection_data = ConvectionData.zeros((ix,il), kx)
-        physics_data = PhysicsData.zeros((ix,il), kx, convection=convection_data)
+        physics_data = PhysicsData.zeros((ix,il), kx, convection=convection_data, speedy_coords=speedy_coords)
         state = PhysicsState.zeros(zxy,temperature=temp, specific_humidity=qg,normalized_surface_pressure=pressure)
-        _, physics_data = spec_hum_to_rel_hum(physics_data=physics_data, state=state, parameters=parameters, forcing=forcing, geometry=default_geometry)
+        _, physics_data = spec_hum_to_rel_hum(physics_data=physics_data, state=state, parameters=parameters, forcing=forcing, terrain=terrain)
 
         def f(temp_0, pressure, terrain_fsg, physics_data_h_rh):
             return rel_hum_to_spec_hum(temp_0, pressure, terrain_fsg, physics_data_h_rh)
@@ -202,9 +204,9 @@ class TestHumidityUnit(unittest.TestCase):
         f_jvp = functools.partial(jax.jvp, f)
         f_vjp = functools.partial(jax.vjp, f)  
 
-        check_vjp(f, f_vjp, args = (temp[0], pressure, default_geometry.fsg[0], physics_data.humidity.rh[0]), 
+        check_vjp(f, f_vjp, args = (temp[0], pressure, speedy_coords.fsg[0], physics_data.humidity.rh[0]), 
                                 atol=None, rtol=1, eps=0.00001)
-        check_jvp(f, f_jvp, args = (temp[0], pressure, default_geometry.fsg[0], physics_data.humidity.rh[0]), 
+        check_jvp(f, f_jvp, args = (temp[0], pressure, speedy_coords.fsg[0], physics_data.humidity.rh[0]), 
                                 atol=None, rtol=1, eps=0.000001)
         
     def test_spec_hum_to_rel_hum_gradient_check(self):
@@ -216,7 +218,7 @@ class TestHumidityUnit(unittest.TestCase):
         xy = (ix,il)
         # Set inputs
         convection_data = ConvectionData.ones((ix,il), kx)
-        physics_data = PhysicsData.ones((ix,il), kx, convection=convection_data)
+        physics_data = PhysicsData.ones((ix,il), kx, convection=convection_data, speedy_coords=speedy_coords)
         forcing = ForcingData.ones(xy)
         # Edge case: Zero Specific Humidity
         qg = jnp.ones((kx,ix,il))*0
@@ -227,14 +229,14 @@ class TestHumidityUnit(unittest.TestCase):
         state_floats = convert_to_float(state)
         parameters_floats = convert_to_float(parameters)
         forcing_floats = convert_to_float(forcing)
-        terrain_floats = convert_to_float(default_geometry)
+        terrain_floats = convert_to_float(terrain)
 
         def f(physics_data_f, state_f, parameters_f, forcing_f,terrain_f):
             tend_out, data_out = spec_hum_to_rel_hum(physics_data=convert_back(physics_data_f, physics_data), 
                                        state=convert_back(state_f, state), 
                                        parameters=convert_back(parameters_f, parameters), 
                                        forcing=convert_back(forcing_f, forcing), 
-                                       geometry=convert_back(terrain_f, default_geometry)
+                                       terrain=convert_back(terrain_f, terrain)
                                        )
             return convert_to_float(data_out.humidity)
         
