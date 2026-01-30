@@ -76,6 +76,18 @@ class TerrainData:
     fmask: jnp.ndarray
     lfluxland: jnp.bool_
 
+    def copy(self, orog=None, fmask=None, phis0=None, lfluxland=None):
+        """
+        Copy an instance of TerrainData
+        """
+
+        return TerrainData(
+            orog=orog if orog is not None else self.orog,
+            phis0=phis0 if phis0 is not None else self.phis0,
+            fmask=fmask if fmask is not None else self.fmask,
+            lfluxland=lfluxland if lfluxland is not None else self.lfluxland
+        )
+
     @classmethod
     def from_coords(cls, coords: CoordinateSystem, orography=None, fmask=None, lfluxland=False,
                     terrain_file=None, interpolate=False, truncation_number=None):
