@@ -47,7 +47,7 @@ class SpeedyPhysics(Physics):
     UNITS_TABLE_CSV_PATH = Path(__file__).parent / "units_table.csv"
 
     def __init__(self,
-                 coords: CoordinateSystem=None,
+                 coords: CoordinateSystem,
                  parameters: Parameters=Parameters.default(),
                  checkpoint_terms=True
     ) -> None:
