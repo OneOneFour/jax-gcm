@@ -105,14 +105,11 @@ class SpeedyCoords:
         )
 
     @classmethod
-    def single_column_geometry(cls, radang=0., orog=0., fmask=0., phis0=None, num_levels=8):
+    def single_column_coords(cls, radang=0., num_levels=8):
             """Initialize a speedy_coords instance for a single column model.
 
             Args:
                 radang (optional): Latitude of the single column in radians (default 0).
-                orog (optional): Orography height in meters (default 0).
-                fmask (optional): Fractional land-sea mask (default 0, all ocean).
-                phis0 (optional): Spectrally truncated surface geopotential (default grav * orog).
                 num_levels (optional): Number of vertical levels (default 8).
 
             Returns:
@@ -121,17 +118,10 @@ class SpeedyCoords:
             """
             sia, coa = jnp.sin(radang), jnp.cos(radang)
 
-            # Letting user specify phis0 allows for the case of pulling one column from a full geometry,
-            # where phis0 =/= grav * orog due to spectral truncation.
-            if phis0 is None:
-                phis0 = grav * orog
-
             # Vertical functions of sigma
             hsg, fsg, dhs, sigl, grdsig, grdscp, wvi = compute_speedy_vertical_coords(num_levels)
 
-            return cls(nodal_shape=(num_levels, 1, 1),
-                    orog=jnp.array([[orog]]), phis0=jnp.array([[phis0]]), fmask=jnp.array([[fmask]]),
-                    radang=jnp.array([[radang]]), sia=jnp.array([[sia]]), coa=jnp.array([[coa]]),
+            return cls(radang=jnp.array([[radang]]), sia=jnp.array([[sia]]), coa=jnp.array([[coa]]),
                     hsg=hsg, fsg=fsg, dhs=dhs, sigl=sigl,
                     grdsig=grdsig, grdscp=grdscp, wvi=wvi)
 
