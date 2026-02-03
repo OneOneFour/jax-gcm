@@ -62,8 +62,11 @@ class TestModelUnit(unittest.TestCase):
         
     def test_speedy_model(self):
         from jcm.model import Model
+        from jcm.physics.speedy.speedy_coords import get_speedy_coords
 
+        # Create model that goes through one timestep
         model = Model(
+            coords=get_speedy_coords(),
             time_step=720,
         )
 
@@ -109,8 +112,10 @@ class TestModelUnit(unittest.TestCase):
     @pytest.mark.slow
     def test_speedy_model_averages(self):
         from jcm.model import Model
+        from jcm.physics.speedy.speedy_coords import get_speedy_coords
 
         model = Model(
+            coords=get_speedy_coords(),
             time_step=30, # to make sure this test stays valid if we ever change the default timestep
         )
         preds = model.run(save_interval=.5/24., total_time=2/24.)
@@ -118,6 +123,7 @@ class TestModelUnit(unittest.TestCase):
         true_avg_preds = jtu.tree_map(lambda a: jnp.mean(a, axis=0), preds)
 
         avg_model = Model(
+            coords=get_speedy_coords(),
             time_step=30,
         )
         avg_preds = avg_model.run(
@@ -136,9 +142,10 @@ class TestModelUnit(unittest.TestCase):
     def test_speedy_model_gradients_isnan(self):
         from jcm.model import Model
         from jcm.utils import ones_like
-
+        from jcm.physics.speedy.speedy_coords import get_speedy_coords
         # Create model that goes through one timestep
-        model = Model()
+        
+        model = Model(coords=get_speedy_coords())
         state = model._prepare_initial_modal_state()
 
         def fn(state):
@@ -164,8 +171,9 @@ class TestModelUnit(unittest.TestCase):
     def test_speedy_model_gradients_multiple_timesteps_isnan(self):
         from jcm.model import Model
         from jcm.utils import ones_like
+        from jcm.physics.speedy.speedy_coords import get_speedy_coords
 
-        model = Model()
+        model = Model(coords=get_speedy_coords())
         state = model._prepare_initial_modal_state()
 
         def fn(state):
@@ -260,9 +268,10 @@ class TestModelUnit(unittest.TestCase):
     @pytest.mark.skip(reason="finite differencing produces nans")
     def test_speedy_model_state_gradient_check(self):
         from jcm.model import Model
+        from jcm.physics.speedy.speedy_coords import get_speedy_coords
 
         # Create model that goes through one timestep
-        model = Model()
+        model = Model(coords=get_speedy_coords())
         state = model._prepare_initial_modal_state()
 
         def f(state_f):

@@ -31,6 +31,7 @@ def run_default_speedy_model(save_interval=None):
         output_averages = True
 
     model = Model(
+        coords=coords,
         terrain=realistic_terrain,
         time_step=time_step,
     )
