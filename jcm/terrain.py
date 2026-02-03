@@ -24,11 +24,11 @@ def get_terrain(orography: jnp.ndarray = None, fmask: jnp.ndarray = None, nodal_
         fmask_threshold: Threshold for rounding fmask values that are close to 0 or 1.
 
     Returns:
+
         Orography height (m) (ix, il)
         Land-sea mask (ix, il)
 
     """
-
     if fmask is None and orography is None:
         if terrain_file is None:
             if nodal_shape is None:
@@ -72,17 +72,13 @@ class TerrainData:
         fmask: Fractional land-sea mask, shape (ix, il)
         lfluxland: Whether to compute land surface fluxes (bool)
     """
-
     orog: jnp.ndarray
     phis0: jnp.ndarray
     fmask: jnp.ndarray
     lfluxland: jnp.bool_
 
     def copy(self, orog=None, fmask=None, phis0=None, lfluxland=None):
-        """
-        Copy an instance of TerrainData
-        """
-
+        """Copy an instance of TerrainData """
         return TerrainData(
             orog=orog if orog is not None else self.orog,
             phis0=phis0 if phis0 is not None else self.phis0,
@@ -108,7 +104,6 @@ class TerrainData:
             TerrainData object
 
         """
-
         # Orography and surface geopotential
         orog, fmask = get_terrain(
             fmask=fmask,
@@ -134,10 +129,10 @@ class TerrainData:
             truncation_number (optional): Spectral truncation number for surface geopotential. If None, inferred from coords.
 
         Returns:
+
             TerrainData object
 
         """
-
         orography, fmask = get_terrain(terrain_file=terrain_file, target_resolution=target_resolution, grid=coords.horizontal)
 
         # Validate that terrain matches coords
@@ -159,10 +154,10 @@ class TerrainData:
             coords: dinosaur.coordinate_systems.CoordinateSystem object.
 
         Returns:
+
             TerrainData object with all zeros for orography and fmask.
 
         """
-
         nodal_shape = coords.horizontal.nodal_shape
         return cls(
             orog=jnp.zeros(nodal_shape),
@@ -182,10 +177,10 @@ class TerrainData:
             lfluxland (optional): Whether to compute land surface fluxes (default False).
 
         Returns:
+
             TerrainData object
 
         """
-        
         # Letting user specify phis0 allows for the case of pulling one column from full terrain,
         # where phis0 != grav * orog due to spectral truncation.
         if phis0 is None:
