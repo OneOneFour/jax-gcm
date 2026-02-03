@@ -258,7 +258,7 @@ class TestShortWaveRadiation(unittest.TestCase):
         zxy = (kx, ix, il)
         # Provide a date that is equivalent to tyear=0.25
         date_data = DateData.set_date(model_time=jdt.to_datetime('2000-03-21'))
-        physics_data = PhysicsData.zeros(xy,kx,date=date_data,speedy_coords=speedy_coords)
+        physics_data = PhysicsData.zeros(xy,kx,date=date_data, speedy_coords=speedy_coords)
         state = PhysicsState.zeros(zxy)
         forcing = ForcingData.zeros(xy)
 
@@ -321,7 +321,7 @@ class TestShortWaveRadiation(unittest.TestCase):
         zxy = (kx, ix, il)
         # Provide a date that is equivalent to tyear=0.25
         date_data = DateData.set_date(model_time=jdt.to_datetime('2000-03-21'))
-        physics_data = PhysicsData.zeros(xy,kx,date=date_data,speedy_coords=speedy_coords)
+        physics_data = PhysicsData.zeros(xy,kx,date=date_data, speedy_coords=speedy_coords)
         state = PhysicsState.zeros(zxy)
         physics_data = get_zonal_average_fields(state, physics_data, forcing, terrain)
         
@@ -364,7 +364,7 @@ class TestShortWaveRadiation(unittest.TestCase):
 
         # Calculate gradient
         _, f_vjp = jax.vjp(get_zonal_average_fields, state, physics_data, forcing, terrain)
-        datas = PhysicsData.ones(xy,kx,speedy_coords=speedy_coords)
+        datas = PhysicsData.ones(xy,kx, speedy_coords=speedy_coords)
         df_dstates, df_ddatas, _, _ = f_vjp(datas)
 
         self.assertFalse(df_ddatas.isnan().any_true())
@@ -374,7 +374,7 @@ class TestShortWaveRadiation(unittest.TestCase):
         """Test that we can calculate gradients of shortwave radiation without getting NaN values"""
         xy = (ix, il)
         zxy = (kx, ix, il)
-        physics_data = PhysicsData.ones(xy,kx,speedy_coords=speedy_coords)  # Create PhysicsData object (parameter)
+        physics_data = PhysicsData.ones(xy,kx, speedy_coords=speedy_coords)  # Create PhysicsData object (parameter)
         state =PhysicsState.ones(zxy)
         forcing = ForcingData.ones(xy)
         physics_data.shortwave_rad.compute_shortwave = True
@@ -382,9 +382,9 @@ class TestShortWaveRadiation(unittest.TestCase):
         # Calculate gradient
         _, f_vjp = jax.vjp(get_shortwave_rad_fluxes, state, physics_data, parameters, forcing, terrain)
         tends = PhysicsTendency.ones(zxy)
-        datas = PhysicsData.ones(xy,kx,speedy_coords=speedy_coords)
+        datas = PhysicsData.ones(xy,kx, speedy_coords=speedy_coords)
         input = (tends, datas)
-        df_dstates, df_ddatas, df_dparams, df_dforcing, df_dgeometry = f_vjp(input)
+        df_dstates, df_ddatas, df_dparams, df_dforcing, df_dterrain = f_vjp(input)
 
         self.assertFalse(df_ddatas.isnan().any_true())
         self.assertFalse(df_dstates.isnan().any_true())
@@ -408,7 +408,6 @@ class TestShortWaveRadiation(unittest.TestCase):
         precnv = -1.0 * jnp.ones(xy)
         precls = 4.0 * jnp.ones(xy)
         iptop = 8 * jnp.ones(xy, dtype=int)
-        fmask = .7 * jnp.ones(xy)
 
         surface_flux = SurfaceFluxData.zeros(xy)
         humidity = HumidityData.zeros(xy, kx, rh=rh, qsat=qsat)
@@ -425,9 +424,9 @@ class TestShortWaveRadiation(unittest.TestCase):
         # Calculate gradient
         primals, f_vjp = jax.vjp(get_clouds, state, physics_data, parameters, forcing, terrain)
         tends = PhysicsTendency.ones(zxy)
-        datas = PhysicsData.ones(xy,kx,speedy_coords=speedy_coords)
+        datas = PhysicsData.ones(xy,kx, speedy_coords=speedy_coords)
         input = (tends, datas)
-        df_dstate, df_ddatas, df_dparams, df_dforcing, df_dgeometry = f_vjp(input)
+        df_dstate, df_ddatas, df_dparams, df_dforcing, df_dterrain = f_vjp(input)
         
         self.assertFalse(df_ddatas.isnan().any_true())
         self.assertFalse(df_dstate.isnan().any_true())
@@ -459,7 +458,7 @@ class TestShortWaveRadiation(unittest.TestCase):
         sw_data = SWRadiationData.zeros(xy, kx)
         date_data = DateData.zeros()
         date_data.tyear = 0.6
-        physics_data = PhysicsData.zeros(xy,kx,surface_flux=surface_flux, humidity=humidity, convection=convection, condensation=condensation, shortwave_rad=sw_data, date=date_data)
+        physics_data = PhysicsData.zeros(xy,kx,surface_flux=surface_flux, humidity=humidity, convection=convection, condensation=condensation, shortwave_rad=sw_data, date=date_data, speedy_coords=speedy_coords)
         state = PhysicsState.zeros(zxy, specific_humidity=qa, geopotential=geopotential, normalized_surface_pressure=psa)
         _, physics_data = get_clouds(state, physics_data, parameters, forcing, terrain)
 
@@ -491,7 +490,7 @@ class TestShortWaveRadiation(unittest.TestCase):
         """Test whether gradients are close for shortwave radiation"""
         xy = (ix, il)
         zxy = (kx, ix, il)
-        physics_data = PhysicsData.ones(xy,kx,speedy_coords=speedy_coords)  # Create PhysicsData object (parameter)
+        physics_data = PhysicsData.ones(xy,kx, speedy_coords=speedy_coords)  # Create PhysicsData object (parameter)
         state =PhysicsState.ones(zxy)
         forcing = ForcingData.ones(xy)
         physics_data.shortwave_rad.compute_shortwave = True
@@ -551,7 +550,7 @@ class TestShortWaveRadiation(unittest.TestCase):
         date_data = DateData.zeros()
         date_data.tyear = 0.6
 
-        physics_data = PhysicsData.zeros(xy,kx,surface_flux=surface_flux, humidity=humidity, convection=convection, condensation=condensation, shortwave_rad=sw_data, date=date_data)
+        physics_data = PhysicsData.zeros(xy,kx,surface_flux=surface_flux, humidity=humidity, convection=convection, condensation=condensation, shortwave_rad=sw_data, date=date_data, speedy_coords=speedy_coords)
         state = PhysicsState.zeros(zxy, specific_humidity=qa, geopotential=geopotential, normalized_surface_pressure=psa)
         forcing = ForcingData.zeros(xy, fmask=fmask)
 

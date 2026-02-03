@@ -38,9 +38,9 @@ class TestConvectionUnit(unittest.TestCase):
         qa = jnp.sin(2*jnp.arange(ix)[:, jnp.newaxis]/ix)**2 * qsat * 3.5
         phi = rgas * ta * jnp.log(fsg[:, jnp.newaxis, jnp.newaxis])
         se = cp * ta + phi
-
-        physics_data = PhysicsData.zeros((ix, il), kx, speedy_coords=speedy_coords)
         
+        physics_data = PhysicsData.zeros((ix, il), kx, speedy_coords=speedy_coords)
+
         iptop, qdif = diagnose_convection(ps, se, qa, qsat, parameters, physics_data, forcing, terrain)
 
         from importlib import resources
@@ -64,7 +64,6 @@ class TestConvectionUnit(unittest.TestCase):
         qsat_broadcast = jnp.tile(qsat, (1, ix, il))
         
         physics_data = PhysicsData.zeros((ix, il), kx, speedy_coords=speedy_coords)
-
         itop, qdif = diagnose_convection(psa, se_broadcast, qa_broadcast, qsat_broadcast, parameters, physics_data, forcing, terrain)
         
         self.assertTrue(jnp.allclose(itop, jnp.ones((ix, il))*9))
@@ -108,7 +107,7 @@ class TestConvectionUnit(unittest.TestCase):
 
         physics_data = PhysicsData.zeros((ix, il), kx, speedy_coords=speedy_coords)
 
-        itop, qdif = diagnose_convection(psa, se_broadcast, qa_broadcast * 1000., qsat_broadcast * 1000., parameters, physics_data, forcing, terrain)
+        itop, qdif = diagnose_convection(psa, se_broadcast, qa_broadcast * 1000., qsat_broadcast * 1000., parameters,physics_data, forcing, terrain)
 
         test_itop = 5
         test_qdif = 1.1395
@@ -248,8 +247,8 @@ class TestConvectionUnit(unittest.TestCase):
 
         def f(ps, se, qa, qsat, parameters_f, physics_data_f, forcing_f,terrain_f):
             iptop, qdif = diagnose_convection(ps, se, qa, qsat, 
-                                       parameters=convert_back(parameters_f, parameters), 
-                                       physics_data=convert_back(physics_data_f, physics_data),
+                                       parameters=convert_back(parameters_f, parameters),
+                                       physics_data=convert_back(physics_data_f, physics_data), 
                                        forcing=convert_back(forcing_f, forcing), 
                                        terrain=convert_back(terrain_f, terrain)
                                        )

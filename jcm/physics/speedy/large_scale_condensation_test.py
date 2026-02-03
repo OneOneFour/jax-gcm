@@ -11,12 +11,12 @@ class TestLargeScaleCondensationUnit(unittest.TestCase):
         global ix, il, kx
         ix, il, kx = 1, 1, 8
 
-        global ConvectionData, HumidityData, PhysicsData, PhysicsState, PhysicsTendency, parameters, terrain, speedy_coords, ForcingData, get_large_scale_condensation_tendencies
+        global ConvectionData, HumidityData, PhysicsData, PhysicsState, PhysicsTendency, parameters, speedy_coords, terrain, ForcingData, get_large_scale_condensation_tendencies
         from jcm.physics.speedy.physics_data import ConvectionData, HumidityData, PhysicsData
         from jcm.physics_interface import PhysicsState, PhysicsTendency
         from jcm.physics.speedy.params import Parameters
-        from jcm.forcing import ForcingData
         from jcm.terrain import TerrainData
+        from jcm.forcing import ForcingData
         from jcm.physics.speedy.speedy_coords import SpeedyCoords
         from jcm.physics.speedy.large_scale_condensation import get_large_scale_condensation_tendencies
 
@@ -110,7 +110,7 @@ class TestLargeScaleCondensationUnit(unittest.TestCase):
         convection = ConvectionData.zeros(xy, kx, iptop=itop)
         humidity = HumidityData.zeros(xy, kx, qsat=qsat[:, jnp.newaxis, jnp.newaxis])
         state = PhysicsState.zeros(zxy, specific_humidity=qa[:, jnp.newaxis, jnp.newaxis],normalized_surface_pressure=psa)
-        physics_data = PhysicsData.zeros(xy, kx, humidity=humidity, convection=convection,speedy_coords=speedy_coords)
+        physics_data = PhysicsData.zeros(xy, kx, humidity=humidity, convection=convection, speedy_coords=speedy_coords)
         forcing = ForcingData.ones(xy)
 
         # Set float inputs
