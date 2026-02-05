@@ -18,8 +18,8 @@ def get_speedy_coords(layers=8, spectral_truncation=31, nodal_shape=(96,48), spm
         spmd_mesh: Optional SPMD mesh for parallelization
 
     Returns:
-
         CoordinateSystem object with SPEEDY sigma levels
+
     """
     if layers not in SIGMA_LAYER_BOUNDARIES:
         raise ValueError(f"SPEEDY physics supports {list(SIGMA_LAYER_BOUNDARIES.keys())} layers, got {layers}")
@@ -38,12 +38,11 @@ def compute_speedy_vertical_coords(kx: int):
             kx: Number of vertical levels
 
         Returns:
-
             Tuple of (hsg, fsg, dhs, sigl, grdsig, grdscp, wvi)
 
         Raises:
-
             ValueError: If kx is not a supported number of vertical levels
+
         """
         if kx not in SIGMA_LAYER_BOUNDARIES:
             raise ValueError(f"Invalid number of vertical levels: {kx}. Must be one of: {tuple(SIGMA_LAYER_BOUNDARIES.keys())}")
@@ -89,7 +88,9 @@ class SpeedyCoords:
         radang: Latitude in radians (il,)
         sia: Sin of latitude (il,)
         coa: Cos of latitude (il,)
+
     """
+
     # Vertical
     hsg: jnp.ndarray
     fsg: jnp.ndarray
@@ -116,7 +117,6 @@ class SpeedyCoords:
             sia=None,
             coa=None):
         """Copy an instance of SpeedyCoords"""
-
         return SpeedyCoords(
             hsg=hsg if hsg is not None else self.hsg,
             fsg=fsg if fsg is not None else self.fsg,
@@ -139,7 +139,6 @@ class SpeedyCoords:
                 num_levels (optional): Number of vertical levels (default 8).
 
             Returns:
-
                 Speedy coords object
 
             """
@@ -163,8 +162,8 @@ class SpeedyCoords:
             coords: dinosaur.coordinate_systems.CoordinateSystem object
 
         Returns:
-
             SpeedyCoords struct containing all coordinate transformations
+
         """
         # Compute vertical coordinates
         kx = coords.nodal_shape[0]

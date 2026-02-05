@@ -33,8 +33,7 @@ VALID_NODAL_SHAPES = tuple(TRUNCATION_FOR_NODAL_SHAPE.keys())
 VALID_TRUNCATIONS = tuple(TRUNCATION_FOR_NODAL_SHAPE.values())
 
 def get_coords(sigma_boundaries, spectral_truncation=31, nodal_shape=None, spmd_mesh=None) -> CoordinateSystem:
-    """
-    Returns a CoordinateSystem object for the given sigma boundaries and horizontal resolution.
+    """Returns a CoordinateSystem object for the given sigma boundaries and horizontal resolution.
 
     This is a physics-agnostic function. Use physics-specific helpers for default sigma boundaries:
     - jcm.physics.speedy.utils.get_speedy_coords()
@@ -174,6 +173,7 @@ def _infer_dims_shape_and_coords(
         all_coords: mapping that represents all supported coordinates.
         shape_to_dims: mapping from array shape to dimensions. `sample` is assumed
         to come prior to `time`.
+
     """
     # Axes and coordinate names
     XR_SAMPLE_NAME = 'sample'
@@ -282,6 +282,7 @@ def data_to_xarray(
 
   Returns:
     xarray.Dataset with containing `data`.
+
   """
   XR_SURFACE_NAME = 'surface'
   # check that prognostic and tracer names do not collide;

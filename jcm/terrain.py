@@ -24,7 +24,6 @@ def get_terrain(orography: jnp.ndarray = None, fmask: jnp.ndarray = None, nodal_
         fmask_threshold: Threshold for rounding fmask values that are close to 0 or 1.
 
     Returns:
-
         Orography height (m) (ix, il)
         Land-sea mask (ix, il)
 
@@ -73,14 +72,16 @@ class TerrainData:
         phis0: Spectrally truncated surface geopotential, shape (ix, il)
         fmask: Fractional land-sea mask, shape (ix, il)
         lfluxland: Whether to compute land surface fluxes (bool)
+
     """
+
     orog: jnp.ndarray
     phis0: jnp.ndarray
     fmask: jnp.ndarray
     lfluxland: jnp.bool_
 
     def copy(self, orog=None, fmask=None, phis0=None, lfluxland=None):
-        """Copy an instance of TerrainData """
+        """Copy an instance of TerrainData"""
         return TerrainData(
             orog=orog if orog is not None else self.orog,
             phis0=phis0 if phis0 is not None else self.phis0,
@@ -129,7 +130,6 @@ class TerrainData:
             lfluxland (optional): Whether to compute land surface fluxes (default True).
 
         Returns:
-
             TerrainData object
 
         """
@@ -154,7 +154,6 @@ class TerrainData:
             coords: dinosaur.coordinate_systems.CoordinateSystem object.
 
         Returns:
-
             TerrainData object with all zeros for orography and fmask.
 
         """
@@ -177,7 +176,6 @@ class TerrainData:
             lfluxland (optional): Whether to compute land surface fluxes (default False).
 
         Returns:
-
             TerrainData object
 
         """
