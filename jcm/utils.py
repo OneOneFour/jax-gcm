@@ -33,7 +33,7 @@ VALID_NODAL_SHAPES = tuple(TRUNCATION_FOR_NODAL_SHAPE.keys())
 VALID_TRUNCATIONS = tuple(TRUNCATION_FOR_NODAL_SHAPE.values())
 
 def get_coords(sigma_boundaries, spectral_truncation=31, nodal_shape=None, spmd_mesh=None) -> CoordinateSystem:
-    """Returns a CoordinateSystem object for the given sigma boundaries and horizontal resolution.
+    """Return a CoordinateSystem object for the given sigma boundaries and horizontal resolution.
 
     This is a physics-agnostic function. Use physics-specific helpers for default sigma boundaries:
     - jcm.physics.speedy.utils.get_speedy_coords()
@@ -161,7 +161,7 @@ def _infer_dims_shape_and_coords(
     sample_ids: typing.Array,
     additional_coords: typing.Mapping[str, typing.Array],
 ) -> tuple[dict[str, typing.Array], dict[tuple[int, ...], tuple[int, ...]]]:
-    """Returns full coordinates for given grids and default shape to dims mapping.
+    """Return full coordinates for given grids and default shape to dims mapping.
 
     Args:
         coords: horizontal and vertical descritization.
@@ -269,7 +269,7 @@ def data_to_xarray(
     attrs: Mapping[str, Any] | None = None,
     serialize_coords_to_attrs: bool = True,
 ) -> xarray.Dataset:
-  """Returns a sample/time referenced xarray.Dataset of primitive equation data.
+  """Return a sample/time referenced xarray.Dataset of primitive equation data.
 
   Args:
     data: dictionary representation of the primitive equation states.
