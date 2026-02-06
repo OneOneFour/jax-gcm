@@ -14,7 +14,7 @@ class TestForcingDataZeros(unittest.TestCase):
     """Tests for ForcingData.zeros classmethod."""
 
     def test_zeros_all_defaults(self):
-        """zeros with no additional args should create all-zero arrays."""
+        """Zeros with no additional args should create all-zero arrays."""
         nodal_shape = (96, 48)
         forcing = ForcingData.zeros(nodal_shape)
 
@@ -33,7 +33,7 @@ class TestForcingDataZeros(unittest.TestCase):
         self.assertTrue(jnp.allclose(forcing.sea_surface_temperature, 0.0))
 
     def test_zeros_with_custom_sst(self):
-        """zeros with custom SST should use provided values."""
+        """Zeros with custom SST should use provided values."""
         nodal_shape = (96, 48)
         sst = jnp.ones(nodal_shape) * 300.
 
@@ -44,7 +44,7 @@ class TestForcingDataZeros(unittest.TestCase):
         self.assertTrue(jnp.allclose(forcing.alb0, 0.0))
 
     def test_zeros_with_multiple_custom_fields(self):
-        """zeros with multiple custom fields should use all provided values."""
+        """Zeros with multiple custom fields should use all provided values."""
         nodal_shape = (64, 32)
         alb0 = jnp.ones(nodal_shape) * 0.3
         sst = jnp.ones(nodal_shape) * 290.
@@ -68,7 +68,7 @@ class TestForcingDataOnes(unittest.TestCase):
     """Tests for ForcingData.ones classmethod."""
 
     def test_ones_all_defaults(self):
-        """ones with no additional args should create all-ones arrays."""
+        """Ones with no additional args should create all-ones arrays."""
         nodal_shape = (96, 48)
         forcing = ForcingData.ones(nodal_shape)
 
@@ -81,7 +81,7 @@ class TestForcingDataOnes(unittest.TestCase):
         self.assertTrue(jnp.allclose(forcing.sea_surface_temperature, 1.0))
 
     def test_ones_with_custom_field(self):
-        """ones with custom field should use provided value, rest are ones."""
+        """Ones with custom field should use provided value, rest are ones."""
         nodal_shape = (64, 32)
         alb0 = jnp.ones(nodal_shape) * 0.2
 
@@ -133,7 +133,7 @@ class TestForcingDataIsnan(unittest.TestCase):
     """Tests for ForcingData.isnan method."""
 
     def test_isnan_no_nans(self):
-        """isnan should return all False when no NaNs present."""
+        """Isnan should return all False when no NaNs present."""
         nodal_shape = (64, 32)
         forcing = ForcingData.zeros(nodal_shape)
 
@@ -144,7 +144,7 @@ class TestForcingDataIsnan(unittest.TestCase):
         self.assertFalse(jnp.any(nan_check.sea_surface_temperature))
 
     def test_isnan_with_nans(self):
-        """isnan should detect NaN values."""
+        """Isnan should detect NaN values."""
         nodal_shape = (64, 32)
         sst_with_nan = jnp.ones(nodal_shape) * 300.
         sst_with_nan = sst_with_nan.at[0, 0].set(jnp.nan)

@@ -5,7 +5,6 @@ Tests for TerrainData struct and get_terrain function.
 
 import unittest
 import jax.numpy as jnp
-import numpy as np
 from jcm.terrain import TerrainData, get_terrain
 from jcm.constants import grav
 from jcm.physics.speedy.speedy_coords import get_speedy_coords
