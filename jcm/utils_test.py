@@ -10,7 +10,6 @@ import jax.numpy as jnp
 import numpy as np
 import xarray as xr
 from jcm.utils import (
-    TRUNCATION_FOR_NODAL_SHAPE,
     get_coords,
     spectral_truncation,
     validate_ds,
