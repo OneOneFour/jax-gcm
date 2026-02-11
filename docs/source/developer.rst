@@ -152,7 +152,7 @@ To profile the model and identify performance bottlenecks:
    # Start a trace and create a Perfetto trace file
    jax.profiler.start_trace("./tensorboard_logs", create_perfetto_trace=True)
 
-   model = Model(time_step=30.0,coords=get_speedy_coords())
+   model = Model(coords=get_speedy_coords(),time_step=30.0)
 
    # Run the model
    predictions = model.run(

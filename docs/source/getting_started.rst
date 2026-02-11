@@ -45,14 +45,14 @@ An aquaplanet simulation is the simplest configuration - a water-covered planet 
 
    # Create a model with default aquaplanet configuration
    model = Model(
-       time_step=30.0,  # minutes
-       coords=get_speedy_coords()  # T31 spectral resolution with 8 vertical levels
+      coords=get_speedy_coords(),  # T31 spectral resolution with 8 vertical levels
+      time_step=30.0  # minutes
    )
 
    # Run a 120-day simulation
    predictions = model.run(
-       save_interval=10.0,  # save every 10 days
-       total_time=120.0     # total simulation time in days
+      save_interval=10.0,  # save every 10 days
+      total_time=120.0     # total simulation time in days
    )
 
    # Convert output to xarray Dataset for analysis
@@ -86,16 +86,16 @@ For a more realistic simulation with orography and time-varying boundary conditi
 
    # Create model with realistic configuration
    model = Model(
-       time_step=30.0,
-       coords=coords,
-       terrain=terrain
+      coords,
+      time_step=30.0,
+      terrain=terrain
    )
 
    # Run simulation
    predictions = model.run(
-       forcing=forcing,
-       save_interval=5.0,   # save every 5 days
-       total_time=30.0      # 30-day simulation
+      forcing=forcing,
+      save_interval=5.0,   # save every 5 days
+      total_time=30.0      # 30-day simulation
    )
 
    # Convert to xarray and save
@@ -119,9 +119,9 @@ You can customize various aspects of the model:
    terrain = TerrainData.aquaplanet(coords=coords)
 
    model = Model(
-       time_step=20.0,  # smaller timestep for stability
-       coords=coords,
-       terrain=terrain
+      coords=coords,
+      time_step=20.0,  # smaller timestep for stability
+      terrain=terrain
    )
 
 **Physics**: Use different physics packages or configurations
@@ -136,13 +136,12 @@ You can customize various aspects of the model:
    params = Parameters.default()
    params = params.replace(...)  # modify parameters as needed
 
-   coords = get_speedy_coords()
    physics = SpeedyPhysics(parameters=params)
 
    model = Model(
-       time_step=30.0,
-       coords=coords,
-       physics=physics
+      coords=get_speedy_coords(),
+      time_step=30.0,
+      physics=physics
    )
 
 **Initial Conditions**: Start from a specific state
@@ -198,8 +197,7 @@ To enable multi-device parallelization, simply pass an ``spmd_mesh`` when creati
    #   - Don't split latitude (1)
    #   - Don't split vertical (1)
    # Otherwise, create and run model as usual
-   coords = get_speedy_coords()
-   model = Model(coords=coords,spmd_mesh=(4, 1, 1))
+   model = Model(coords=get_speedy_coords(), spmd_mesh=(4, 1, 1))
    predictions = model.run(save_interval=5.0, total_time=30.0)
 
 Mesh Configuration Guidelines

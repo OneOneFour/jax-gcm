@@ -124,24 +124,24 @@ The model is designed to be composable at multiple levels:
 .. code-block:: python
 
    # Use SPEEDY physics
-   model = Model(coords=coords,physics=SpeedyPhysics())
+   model = Model(coords=get_speedy_coords(),physics=SpeedyPhysics())
 
-   # Use custom physics (future)
-   model = Model(coords=coords,physics=CustomPhysics())
+   # Use custom physics (future), this could use any existing or custom coords that are compatible with the physics implementation
+   model = Model(coords,physics=CustomPhysics())
 
    # Combine multiple physics packages (future)
-   model = Model(coords=coords,physics=HybridPhysics([speedy_radiation, ml_convection]))
+   model = Model(coords,physics=HybridPhysics([speedy_radiation, ml_convection]))
 
 **Configurations**: Model components can be configured independently:
 
 .. code-block:: python
 
    coords = get_speedy_coords(nodal_shape=(256, 128), layers=8, spectral_truncation=85)
-   terrain = TerrainData.from_coords(coords=coords)
+   terrain = TerrainData.from_coords(coords)
    physics = SpeedyPhysics(parameters=custom_params)
    
    model = Model(
-       coords = coords,
+       coords,
        terrain=terrain,
        physics=physics,
    )
@@ -157,7 +157,7 @@ A core design goal is full differentiability through the model. This enables:
 
    def loss(params):
        physics = SpeedyPhysics(parameters=params)
-       model = Model(coords=coords,physics=physics)
+       model = Model(coords=get_speedy_coords(),physics=physics)
        predictions = model.run(...)
        return compute_loss(predictions, observations)
 
@@ -170,7 +170,7 @@ A core design goal is full differentiability through the model. This enables:
 .. code-block:: python
 
    def run_model(initial_state):
-       model = Model(coords=coords)
+       model = Model(coords=get_speedy_coords())
        return model.run(initial_state=initial_state, ...)
 
    # Gradients with respect to initial conditions
@@ -226,7 +226,7 @@ The default configuration provides a working model out of the box:
 .. code-block:: python
 
    # Just works - sensible defaults for everything
-   model = Model(coords=coords)
+   model = Model(coords=get_speedy_coords())
    predictions = model.run()
 
 For Experts
