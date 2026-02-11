@@ -12,9 +12,6 @@ Quantity = units.Quantity
 
 class HeldSuarezPhysics(Physics):
     def __init__(self,
-        coords: coordinate_systems.CoordinateSystem = None,
-        sigma: jnp.ndarray = None,
-        lat: jnp.ndarray = None,
         sigma_b: Quantity = 0.7,
         kf: Quantity = 1 / (1 * units.day),
         ka: Quantity = 1 / (40 * units.day),
@@ -27,7 +24,6 @@ class HeldSuarezPhysics(Physics):
         """Initialize Held-Suarez.
 
         Args:
-            coords: horizontal and vertical discretization. If None, will be set by Model.
             sigma_b: sigma level of effective planetary boundary layer.
             kf: coefficient of friction for Rayleigh drag.
             ka: coefficient of thermal relaxation in upper atmosphere.
@@ -48,7 +44,7 @@ class HeldSuarezPhysics(Physics):
         self.dThz = PHYSICS_SPECS.nondimensionalize(dThz)
         
     def cache_coords(self, coords: coordinate_systems.CoordinateSystem):
-        # Cache coordinates for Held-Suarez physics calculations
+        ''' Cache model coordinate system for Held-Suarez physics '''
         self.coords = coords
         self.sigma = self.coords.vertical.centers
         self.lat = self.coords.horizontal.latitudes

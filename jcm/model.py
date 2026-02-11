@@ -204,12 +204,12 @@ class Model:
         """Initialize the model with the given time step, save interval, and total time.
 
         Args:
+            coords:
+                CoordinateSystem object describing the model coordinates
             time_step:
                 Model time step in minutes
             terrain:
                 TerrainData object describing boundary conditions (orography, land-sea mask, etc.)
-            coords:
-                CoordinateSystem object describing the model coordinates
             physics:
                 Physics object describing the model physics
             diffusion:

@@ -53,7 +53,6 @@ class SpeedyPhysics(Physics):
         """Initialize the SpeedyPhysics class with the specified parameters.
 
         Args:
-            coords (CoordinateSystem): Coordinate system for the physics model. If None, will be set by Model.
             parameters (Parameters): Parameters for the physics model.
             checkpoint_terms (bool): Flag to indicate if terms should be checkpointed.
 
@@ -92,6 +91,7 @@ class SpeedyPhysics(Physics):
         self.terms = physics_terms if not checkpoint_terms else [jax.checkpoint(term, static_argnums=static_argnums.get(term, ()) + (4,)) for term in physics_terms]
     
     def cache_coords(self, coords: CoordinateSystem):
+        ''' Store model coordinate system for SpeedyCoords calculation in compute_tendencies '''
         self.coords = coords
         return 
     
