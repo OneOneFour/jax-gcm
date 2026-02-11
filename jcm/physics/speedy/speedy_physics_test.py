@@ -18,7 +18,7 @@ class TestSpeedyPhysicsUnit(unittest.TestCase):
     def test_speedy_forcing(self):
         grid_shape = (kx,ix,il)
         physics = SpeedyPhysics()
-        physics.initialize_coords(coords)
+        physics.cache_coords(coords)
         tendencies, data = physics.compute_tendencies(
             state=PhysicsState.zeros(grid_shape),
             forcing=ForcingData.ones(grid_shape[1:]),

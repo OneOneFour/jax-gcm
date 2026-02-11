@@ -238,7 +238,7 @@ class Model:
         )
         
         self.physics = physics or SpeedyPhysics()
-        self.physics.initialize_coords(self.coords)
+        self.physics.cache_coords(self.coords)
 
         self.diffusion = diffusion or DiffusionFilter.default()
 

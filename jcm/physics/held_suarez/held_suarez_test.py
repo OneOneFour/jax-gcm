@@ -10,13 +10,13 @@ class TestHeldSuarezUnit(unittest.TestCase):
 
         time_step = 10
         coords = get_held_suarez_coords()
-        model = Model(coords=coords, time_step=time_step, physics=HeldSuarezPhysics(coords=coords))
+        model = Model(coords=coords, time_step=time_step, physics=HeldSuarezPhysics())
     
         dynamics_tendency = get_physical_tendencies(
             state = model._prepare_initial_modal_state(),
             dynamics = model.primitive,
             time_step = time_step * 60,
-            physics = HeldSuarezPhysics(model.coords),
+            physics = model.physics,
             forcing = None,
             terrain = None,
             diffusion = DiffusionFilter.default(),
@@ -31,7 +31,7 @@ class TestHeldSuarezUnit(unittest.TestCase):
         from jcm.physics.held_suarez.utils import get_held_suarez_coords
         
         coords = get_held_suarez_coords()
-        model = Model(coords=coords,physics=HeldSuarezPhysics(coords=coords))
+        model = Model(coords=coords,physics=HeldSuarezPhysics())
 
         _ = model.run(total_time=36)
 

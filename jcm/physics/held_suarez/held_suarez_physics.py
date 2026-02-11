@@ -13,6 +13,8 @@ Quantity = units.Quantity
 class HeldSuarezPhysics(Physics):
     def __init__(self,
         coords: coordinate_systems.CoordinateSystem = None,
+        sigma: jnp.ndarray = None,
+        lat: jnp.ndarray = None,
         sigma_b: Quantity = 0.7,
         kf: Quantity = 1 / (1 * units.day),
         ka: Quantity = 1 / (40 * units.day),
@@ -36,11 +38,6 @@ class HeldSuarezPhysics(Physics):
             dThz: vertical temperature variation of radiative equilibrium.
 
         """
-        if coords is None:
-            from jcm.physics.held_suarez.utils import get_held_suarez_coords
-            coords = get_held_suarez_coords()
-
-        self.coords = coords
         self.sigma_b = sigma_b
         self.kf = PHYSICS_SPECS.nondimensionalize(kf)
         self.ka = PHYSICS_SPECS.nondimensionalize(ka)
@@ -49,9 +46,13 @@ class HeldSuarezPhysics(Physics):
         self.maxT = PHYSICS_SPECS.nondimensionalize(maxT)
         self.dTy = PHYSICS_SPECS.nondimensionalize(dTy)
         self.dThz = PHYSICS_SPECS.nondimensionalize(dThz)
-        # Coordinates
+        
+    def cache_coords(self, coords: coordinate_systems.CoordinateSystem):
+        # Cache coordinates for Held-Suarez physics calculations
+        self.coords = coords
         self.sigma = self.coords.vertical.centers
         self.lat = self.coords.horizontal.latitudes
+        return
 
     def equilibrium_temperature(self, normalized_surface_pressure):
         p_over_p0 = (
