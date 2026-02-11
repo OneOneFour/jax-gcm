@@ -44,7 +44,7 @@ class HeldSuarezPhysics(Physics):
         self.dThz = PHYSICS_SPECS.nondimensionalize(dThz)
         
     def cache_coords(self, coords: coordinate_systems.CoordinateSystem):
-        ''' Cache model coordinate system for Held-Suarez physics '''
+        """Cache model coordinate system for Held-Suarez physics"""
         self.coords = coords
         self.sigma = self.coords.vertical.centers
         self.lat = self.coords.horizontal.latitudes

@@ -91,7 +91,7 @@ class SpeedyPhysics(Physics):
         self.terms = physics_terms if not checkpoint_terms else [jax.checkpoint(term, static_argnums=static_argnums.get(term, ()) + (4,)) for term in physics_terms]
     
     def cache_coords(self, coords: CoordinateSystem):
-        ''' Store model coordinate system for SpeedyCoords calculation in compute_tendencies '''
+        """Store model coordinate system for SpeedyCoords calculation in compute_tendencies"""
         self.coords = coords
         return 
     
