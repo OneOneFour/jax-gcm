@@ -31,6 +31,7 @@ class TestHumidityUnit(unittest.TestCase):
         self.qg_standard = jnp.ones((kx,ix,il))*2
 
     def test_spec_hum_to_rel_hum_isnan_ones(self):
+        from jcm.constants import grav
         xy = (ix, il)
         zxy = (kx, ix, il)
         
@@ -41,6 +42,8 @@ class TestHumidityUnit(unittest.TestCase):
         qa = 5. * jnp.ones(((kx, ix, il))) #temperature
         rh = 0.8 * jnp.ones(((kx, ix, il))) #relative humidity
         phi = 5000. * jnp.ones(((kx, ix, il))) #geopotential
+        phi0 = 500. * jnp.ones((ix, il)) #surface geopotential
+        fmask = 0.5 * jnp.ones((ix, il)) #land fraction mask
         sea_surface_temperature = 290. * jnp.ones((ix, il)) #ssts
         rsds = 400. * jnp.ones((ix, il)) #surface downward shortwave
         rlds = 400. * jnp.ones((ix, il)) #surface downward longwave
@@ -191,8 +194,8 @@ class TestHumidityUnit(unittest.TestCase):
         state = PhysicsState.zeros(zxy,temperature=temp, specific_humidity=qg,normalized_surface_pressure=pressure)
         _, physics_data = spec_hum_to_rel_hum(physics_data=physics_data, state=state, parameters=parameters, forcing=forcing, terrain=terrain)
 
-        def f(temp_0, pressure, terrain_fsg, physics_data_h_rh):
-            return rel_hum_to_spec_hum(temp_0, pressure, terrain_fsg, physics_data_h_rh)
+        def f(temp_0, pressure, geometry_fsg, physics_data_h_rh):
+            return rel_hum_to_spec_hum(temp_0, pressure, geometry_fsg, physics_data_h_rh)
         
         # Calculate gradient
         f_jvp = functools.partial(jax.jvp, f)
