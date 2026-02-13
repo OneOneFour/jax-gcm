@@ -92,7 +92,7 @@ class SpeedyPhysics(Physics):
     
     def cache_coords(self, coords: CoordinateSystem):
         """Store model coordinate system for SpeedyCoords calculation in compute_tendencies"""
-        self.coords = coords
+        self.coords = SpeedyCoords.from_coordinate_system(coords)
         return 
     
     def compute_tendencies(
@@ -115,15 +115,13 @@ class SpeedyPhysics(Physics):
             Object containing physics data (PhysicsData format)
 
         """
-        # Compute SPEEDY coordinate transformations from coords
-        speedy_coords = SpeedyCoords.from_coordinate_system(self.coords)
 
         # Initialize physics data with speedy_coords cached
         data = PhysicsData.zeros(
             self.coords.horizontal.nodal_shape,
             self.coords.nodal_shape[0],
             date=date,
-            speedy_coords=speedy_coords
+            speedy_coords=self.coords
         )
 
         # the 'physics_terms' return an instance of tendencies and data, data gets overwritten at each step
